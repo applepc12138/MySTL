@@ -34,7 +34,7 @@ namespace mystl {
 	template<typename T, typename Alloc>
 	inline void simple_alloc<T, Alloc>::deallocate(T * ptr, size_t n)
 	{
-		Alloc::deallocate(ptr, sizeof(T));
+		Alloc::deallocate(ptr, sizeof(T) * n);
 	}
 }
 

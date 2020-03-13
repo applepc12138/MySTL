@@ -24,7 +24,7 @@ namespace mystl {
 
 	template <typename ForwardIterator>
 	inline void destroy(ForwardIterator first, ForwardIterator last) {
-		_destroy(frist, last, value_type(first));// 第三个参数等同于(iterator_traits<first>::pointer)0
+		_destroy(first, last, value_type(first));// 第三个参数等同于(iterator_traits<first>::pointer)0
 	}
 
 	template <typename ForwardIterator, typename T>

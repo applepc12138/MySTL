@@ -6,6 +6,7 @@
 #include "mystl_iterator.h" 
 #include "mytype_traits.h"
 #include "mystl_construct.h"
+#include "mystl_algobase.h"
 
 namespace mystl {
 
@@ -13,7 +14,7 @@ namespace mystl {
 	template <class InputIterator, class ForwardIterator>
 	inline ForwardIterator
 	_uninitialized_copy_aux(InputIterator first, InputIterator last, ForwardIterator result, _true_type) {
-		return copy(first, last, result);
+		return mystl::copy(first, last, result);//为什么要加上命名空间限制????
 	}
 
 	template <class InputIterator, class ForwardIterator>
@@ -30,7 +31,19 @@ namespace mystl {
 	ForwardIterator
 	uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result) {
 		return _uninitialized_copy_aux(first, last, result,
-			typename type_traits<typename iterator_traits<InputIterator>::value_type>::is_POD_type{});
+			typename type_traits<typename iterator_traits<InputIterator>::value_type>::is_POD_type());
+	}
+
+	inline char* uninitialized_copy(const char* first, const char* last,
+		char* result) {
+		memmove(result, first, last - first);
+		return result + (last - first);
+	}
+
+	inline wchar_t* uninitialized_copy(const wchar_t* first, const wchar_t* last,
+		wchar_t* result) {
+		memmove(result, first, sizeof(wchar_t) * (last - first));
+		return result + (last - first);
 	}
 
 	/***************************************************************************/

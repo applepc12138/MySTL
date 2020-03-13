@@ -89,7 +89,7 @@ namespace mystl {
 	{
 		if (bytes > (size_t)MAXBYTES)
 			free(p);
-		else {
+		else {//»ØÊÕÇø¿é
 			bytes = round_up(bytes);
 			obj *tmp = (obj*)p;
 			size_t hole = freelist_index(bytes);
