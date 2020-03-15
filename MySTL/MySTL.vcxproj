@@ -162,6 +162,7 @@
     <ClInclude Include="mystl_alloc.h" />
     <ClInclude Include="mystl_construct.h" />
     <ClInclude Include="mystl_iterator.h" />
+    <ClInclude Include="mystl_list.h" />
     <ClInclude Include="mystl_uninitialized.h" />
     <ClInclude Include="mystl_vector.h" />
     <ClInclude Include="mytype_traits.h" />

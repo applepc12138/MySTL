@@ -6,8 +6,6 @@
 namespace mystl 
 {
 
-#include <iterator>
-
 	//struct input_iterator_tag {};
 	//struct output_iterator_tag {};
 	//struct forward_iterator_tag : public input_iterator_tag {};
@@ -69,7 +67,7 @@ namespace mystl
 	template <typename Iterator>
 	typename iterator_traits<Iterator>::difference_type*
 		difference_type(const Iterator& iter) {
-		return static_cast < typename iterator_traits<Iterator>::difference_type*>0;
+		return static_cast < typename iterator_traits<Iterator>::difference_type*>(0);
 	}
 
 	template <class Iterator>
@@ -122,7 +120,7 @@ namespace mystl
 
 	template <typename InputIterator>
 	inline typename iterator_traits<InputIterator>::difference_type
-		distance(InputIterator first, InputIterartor last) {
+		distance(InputIterator first, InputIterator last) {
 		typename iterator_traits<InputIterator>::difference_type n;
 		typedef typename iterator_traits<InputIterator>::difference_type diff_type;
 		_distance(first, last, n, diff_type());
