@@ -66,10 +66,15 @@ namespace mystl {
 	};
 
 
+	template<typename T,typename Alloc>
+	bool operator== (const  list<T, Alloc>&x, const list<T, Alloc>&y);
+	template<typename T,typename Alloc>
+	bool operator< (const  list<T, Alloc>&x, const list<T, Alloc>&y);
 	template <typename T, typename Alloc = simple_alloc<list_node<T>, alloc>>
 	class list {
+		friend bool operator==<T, Alloc> (const list<T, Alloc>& x, const list<T, Alloc>& y);
+		friend bool operator< <T, Alloc> (const list<T, Alloc>& x, const list<T, Alloc>& y);
 	private:
-
 		typedef Alloc data_allocator;
 		typedef list_node<T>* link_type;
 
@@ -95,14 +100,16 @@ namespace mystl {
 		list(InputIterator first, InputIterator last);
 		~list();
 
+		reference operator=(const list& x);
+
 	public:
 		iterator begin() { return node->next; }
 		const_iterator begin()const { return (list_node<const T>*)node->next; }//const_iterator中的成员变量类型是list_node<const T>*类型
 		iterator end() { return node; }
 		const_iterator end()const { return (list_node<const T>*)node; }//const_iterator中的成员变量类型是list_node<const T>*类型
 		
-		reference front(){ return node->data; }
-		const_reference front()const { return node->data; }
+		reference front(){ return node->next->data; }
+		const_reference front()const { return node->next->data; }
 		reference back(){ return node->pre->data; }
 		const_reference back()const { return node->pre->data; }
 		//reference operator[](size_type i);
@@ -171,6 +178,26 @@ namespace mystl {
 		void clear();
 
 	};
+
+	template <typename T, typename Alloc /*= simple_alloc<list_node<T>, alloc>*/>
+	typename list<T, Alloc>::reference mystl::list<T, Alloc>::operator=(const list& x)
+	{
+		if (this != &x) {
+			iterator first1 = begin();
+			iterator last1 = end();
+			const_iterator first2 = x.begin();
+			const_iterator last2 = x.end();
+			while (first1 != last1 && first2 != last2) 
+				*first1++ = *first2++;//学习了! mark 一下
+			if (first2 == last2)
+				erase(first1, last1);
+			else
+				insert(last1, first2, last2);
+			
+		}
+		return *this;
+	}
+
 	template<typename T, typename Alloc>
 	inline list<T, Alloc>::list(const list & l)
 	{
@@ -343,6 +370,43 @@ namespace mystl {
 		}
 		node->next = node;
 		node->pre = node;
+	}
+
+	//?
+	template<typename T, typename Alloc>
+	bool operator== (const list<T, Alloc>& x, const list<T, Alloc>& y) {
+		auto first1 = x.begin();
+		auto first2 = y.begin();
+		auto last1 = x.end();
+		auto last2 = y.end();
+		while (first1 != last1 && first2 != last2) {
+			if (*first1 == *first2) {
+				++first1;
+				++first2;
+			}
+			else
+				return false;
+		}
+		return first1 == last1 && first2 == last2;
+	}
+
+	template<typename T, typename Alloc>
+	bool operator< (const list<T, Alloc>& x, const list<T, Alloc>& y) {
+		auto first1 = x.begin();
+		auto first2 = y.begin();
+		auto last1 = x.end();
+		auto last2 = y.end();
+		while (first1 != last1 && first2 != last2) {
+			if (*first1 < *first2) {
+				++first1;
+				++first2;
+			}
+			else
+				return false;
+		}
+		if (first1 == last1)
+			return true;
+		return false;
 	}
 }
 #endif // !STL_LIST

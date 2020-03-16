@@ -56,5 +56,8 @@
     <ClInclude Include="mystl_list.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="mystl_queue.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

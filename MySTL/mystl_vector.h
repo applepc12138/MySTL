@@ -11,8 +11,11 @@ namespace mystl {
 
 	template <typename T, typename Alloc = simple_alloc<T, alloc>>
 	class vector {
+		friend bool operator==(const vector&x, const vector&y);
+		friend bool operator<(const vector&x, const vector&y);
+
 	private:
-		T *start_ = nullptr;
+		T * start_ = nullptr;
 		T *end_ = nullptr;
 		T *endofstorage_ = nullptr;
 
@@ -77,7 +80,7 @@ namespace mystl {
 		//void clear();
 		//void swap(vector& v);
 		void push_back(const value_type& value);
-		void pop_back() { destroy(--end_);	}
+		void pop_back() { destroy(--end_); }
 		iterator insert(iterator position, const value_type& val);//元素动态增长由此实现
 		void insert(iterator position, const size_type& n, const value_type& val);
 		template <typename InputIterator>
@@ -90,7 +93,7 @@ namespace mystl {
 		void insert_aux(iterator pos, size_type n, const T& value);
 		template <typename InputIterator>
 		void insert_aux(iterator position, InputIterator first, InputIterator last);
-	
+
 	protected:
 		//配置空间并初始化
 		iterator allocate_and_fill(size_type n, const T& value) {
@@ -169,7 +172,7 @@ namespace mystl {
 				deallocate();
 				fill_initialize(v.begin(), v.end());
 			}
-			
+
 		}
 		return *this;
 	}
@@ -190,7 +193,7 @@ namespace mystl {
 	template<typename T, typename Alloc>
 	inline void vector<T, Alloc>::push_back(const value_type & value)
 	{
-		if (end_ != endofstorage_) 
+		if (end_ != endofstorage_)
 			construct(end_++, value);
 		else {
 			insert_aux(end_, value);
@@ -215,9 +218,9 @@ namespace mystl {
 		destroy(end, end_);
 		end_ = end;
 		return end_;
-		
+
 	}
-	
+
 	template<typename T, typename Alloc>
 	inline typename vector<T, Alloc>::iterator vector<T, Alloc>::insert(iterator position, const value_type & val)
 	{
@@ -290,7 +293,7 @@ namespace mystl {
 				new_finish = uninitialized_copy(start_, pos, new_start);
 				new_finish = uninitialized_fill_n(new_finish, n, value);
 				new_finish = uninitialized_copy(pos, end_, new_finish);
-				
+
 				destroy(start_, end_);
 				deallocate();
 				start_ = new_start;
@@ -350,6 +353,15 @@ namespace mystl {
 		}
 	}
 
+	template<typename T, typename Alloc>
+	bool operator==(const vector<T, Alloc>&x, const vector<T, Alloc>&y) {
+		
+	}
+
+	template<typename T, typename Alloc>
+	bool operator<(const vector<T, Alloc>&x, const vector<T, Alloc>&y) {
+
+	}
 }
 
 #endif // !STL_VECTOR
