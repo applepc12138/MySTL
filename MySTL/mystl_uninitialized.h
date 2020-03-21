@@ -74,7 +74,7 @@ namespace mystl {
 	template<class ForwardIterator, class Size, class T>
 	ForwardIterator _uninitialized_fill_n_aux(ForwardIterator first,
 		Size n, const T& x, _true_type) {
-		return fill_n(first, n, x);
+		return mystl::fill_n(first, n, x);
 	}
 	template<class ForwardIterator, class Size, class T>
 	ForwardIterator _uninitialized_fill_n_aux(ForwardIterator first,

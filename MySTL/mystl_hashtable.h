@@ -34,15 +34,15 @@ namespace mystl {
 		typedef value_type& reference;
 		typedef value_type* pointer;
 
-		typedef hashtable_node<Value>* nodeptr;
+		typedef hashtable_node<Value> node;
 
-		typedef hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>* htptr;
+		typedef hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc> hashtable;
 
 		typedef hashtable_iterator<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc> iterator;
 
 	public:
 		hashtable_iterator() = default;
-		hashtable_iterator(nodeptr _n, htptr _ht) : cur(_n), ht(_ht) {}
+		hashtable_iterator(node* _n, hashtable* _ht) : cur(_n), ht(_ht) {}
 		hashtable_iterator(const iterator& iter) : cur(iter.cur), ht(iter.ht) {}
 	public:
 		reference operator*()const {//const hashtable_iterator<Value, Key>* const this
@@ -80,8 +80,8 @@ namespace mystl {
 			return !operator==(iter);
 		}
 	private:
-		nodeptr cur;
-		htptr ht;
+		node* cur;
+		hashtable* ht;
 	};
 
 	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
@@ -98,17 +98,14 @@ namespace mystl {
 			typedef const value_type& reference;
 			typedef const value_type* pointer;
 
-			typedef hashtable_node<Value>* nodeptr;
-			template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
-				typename EqualKey, typename Alloc>
-				class hashtable;//前置声明??
-			typedef hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>* htptr;
+			typedef hashtable_node<Value> node;
+			typedef hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc> hashtable;
 
 			typedef hashtable_const_iterator<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc> iterator;
 
 		public:
 			hashtable_const_iterator() = default;
-			hashtable_const_iterator(nodeptr _n, htptr _ht) : cur(_n), ht(_ht) {}
+			hashtable_const_iterator(const node* _n, const hashtable* _ht) : cur(_n), ht(_ht) {}
 			hashtable_const_iterator(const iterator& iter) : cur(iter.cur), ht(iter.ht) {}
 		public:
 			reference operator*()const {//const hashtable_iterator<Value, Key>* const this
@@ -146,8 +143,8 @@ namespace mystl {
 				return !operator==(iter);
 			}
 		private:
-			nodeptr cur;
-			htptr ht;
+			const node* cur;
+			const hashtable* ht;
 	};
 
 
@@ -175,6 +172,7 @@ namespace mystl {
 	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
 	typename EqualKey, typename Alloc = simple_alloc<hashtable_node<Value>, alloc>>
 	class hashtable {
+		friend bool operator==(const hashtable& h1, const hashtable& h2);
 	public:
 		typedef Alloc data_allocator;
 		typedef hashtable_node<Value> node;
@@ -191,6 +189,9 @@ namespace mystl {
 		typedef const value_type* const_pointer;
 		typedef ptrdiff_t difference_type;
 		typedef size_t size_type;
+
+		typedef HashFunc hasher;
+		typedef EqualKey key_equal;
 	private:
 		HashFunc hash;
 		EqualKey equals;
@@ -280,17 +281,67 @@ namespace mystl {
 			return insert_equal_noresize(v);
 		}
 
+		template <typename InputIterator>
+		void insert_unique(InputIterator first, InputIterator last) {
+			insert_unique(first, last, iterator_category(first));
+		}
+
+		template <typename InputIterator>
+		void insert_equal(InputIterator first, InputIterator last) {
+			insert_equal(first, last, iterator_category(first));
+		}
+
 		size_type size()const { return num_elements; }
 		size_type max_size()const { return size_type(-1); }
 		bool empty()const { return num_elements == 0; }
 
 		iterator find(const key_type& key);
+		const_iterator find(const key_type& key)const;
 		size_type count(const key_type& key)const;
 		
 		void clear();
 	private:
 		pair<iterator, bool> insert_unique_noresize(const value_type& v);
 		iterator insert_equal_noresize(const value_type& v);
+		template <class InputIterator>
+		void insert_unique(InputIterator f, InputIterator l,
+			input_iterator_tag)
+		{
+			for (; f != l; ++f)
+				insert_unique(*f);
+		}
+
+		template <class InputIterator>
+		void insert_equal(InputIterator f, InputIterator l,
+			input_iterator_tag)
+		{
+			for (; f != l; ++f)
+				insert_equal(*f);
+		}
+
+		template <class ForwardIterator>
+		void insert_unique(ForwardIterator f, ForwardIterator l,
+			forward_iterator_tag)
+		{
+			size_type n = 0;
+			distance(f, l, n);
+			resize(num_elements + n);
+			for (; n > 0; --n, ++f)
+				insert_unique_noresize(*f);
+		}
+
+		template <class ForwardIterator>
+		void insert_equal(ForwardIterator f, ForwardIterator l,
+			forward_iterator_tag)
+		{
+			size_type n = 0;
+			distance(f, l, n);
+			resize(num_elements + n);
+			for (; n > 0; --n, ++f)
+				insert_equal_noresize(*f);
+		}
+
+
 		void resize(size_type num_elem_hint);//判断是否需要重建表格
 
 		size_type bkt_num_key(const key_type& key) const
@@ -431,6 +482,23 @@ namespace mystl {
 
 	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
 		typename EqualKey, typename Alloc /*= simple_alloc<hashtable_node<Value>, alloc>*/>
+		typename mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::const_iterator
+		mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::find(const key_type& key) const
+	{
+		size_type bucket = bkt_num_key(key);
+		node* cur = buckets[bucket];
+		while (cur) {
+			if (equals(get_key(cur->value), key)) {
+				return const_iterator(cur, this);
+			}
+			cur = cur->next;
+		}
+		return const_iterator(nullptr, this);
+	}
+
+
+	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
+		typename EqualKey, typename Alloc /*= simple_alloc<hashtable_node<Value>, alloc>*/>
 		typename mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::size_type
 		mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::count(const key_type& key) const
 	{
@@ -444,6 +512,25 @@ namespace mystl {
 			cur = cur->next;
 		}
 		return n;
+	}
+
+	template <typename V, typename K, typename HF, typename ExKey,
+		typename EqK, typename Alloc /*= simple_alloc<hashtable_node<Value>, alloc>*/>
+		bool operator==(const hashtable<V, K, HF, ExKey, EqK, Alloc>& h1, const hashtable<V, K, HF, ExKey, EqK, Alloc>& h2) 
+	{
+		if (h1.buckets.size() != h2.buckets.size())
+			return false;
+		for (int n = 0; n < h1.buckets.size(); ++n) {
+			node* cur1 = h1.buckets[n];
+			node* cur2 = h2.buckets[n];
+			for (; cur1 && cur2 && cur1->value == cur2->value;
+				cur1 = cur1->next, cur2 = cur2->next)
+			{
+			}
+			if (cur1 || cur2)
+				return false;
+		}
+		return true;
 	}
 
 

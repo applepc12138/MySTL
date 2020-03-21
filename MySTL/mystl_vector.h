@@ -118,7 +118,8 @@ namespace mystl {
 
 		//释放已分配空间	
 		void deallocate() {
-			data_allocator::deallocate(start_, endofstorage_ - start_);
+			if(start_)
+				data_allocator::deallocate(start_, endofstorage_ - start_);
 		}
 
 	};
@@ -269,15 +270,15 @@ namespace mystl {
 				if (elems_after > n) {
 					uninitialized_copy(end_ - n, end_, end_);
 					end_ += n;
-					copy_backward(pos, oldend - n, oldend);
-					fill(pos, pos + n, x_copy);
+					mystl::copy_backward(pos, oldend - n, oldend);
+					mystl::fill(pos, pos + n, x_copy);
 				}
 				else {
 					uninitialized_fill_n(end_, n - elems_after, x_copy);
 					end_ += n - elems_after;
 					uninitialized_copy(pos, oldend, end_);
 					end_ += elems_after;
-					fill(pos, oldend, x_copy);
+					mystl::fill(pos, oldend, x_copy);
 				}
 			}
 			else {
