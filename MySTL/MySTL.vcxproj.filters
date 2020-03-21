@@ -59,5 +59,14 @@
     <ClInclude Include="mystl_queue.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="mystl_hashtable.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mystl_pair.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mystl_hashset.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -143,7 +143,7 @@ namespace mystl {
 		typedef _true_type has_trivial_default_constructor;
 		typedef _true_type has_trivial_copy_constructor;
 		typedef _true_type has_trivial_assignment_operator;
-		typedef _true_type has_trivail_destructor;
+		typedef _true_type has_trivial_destructor;
 		typedef _true_type is_POD_type;
 	};
 

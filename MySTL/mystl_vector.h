@@ -35,8 +35,7 @@ namespace mystl {
 
 	public:
 		//构造,复制,赋值,析构相关函数
-		vector()
-			:start_(0), end_(0), endofstorage_(0) {}
+		vector() {}
 		explicit vector(const size_type n) {
 			fill_initialize(n, T());
 		}
@@ -77,8 +76,8 @@ namespace mystl {
 		bool empty() const { return begin() == end(); }
 
 		//添加删除元素相关
-		//void clear();
-		//void swap(vector& v);
+		void clear();
+		void swap(vector& v);
 		void push_back(const value_type& value);
 		void pop_back() { destroy(--end_); }
 		iterator insert(iterator position, const value_type& val);//元素动态增长由此实现
@@ -87,6 +86,8 @@ namespace mystl {
 		void insert(iterator position, InputIterator first, InputIterator last);
 		iterator erase(iterator position);
 		iterator erase(iterator first, iterator last);
+
+		void reserve(size_type n);
 
 	private:
 		void insert_aux(iterator pos, const T& value);
@@ -110,12 +111,10 @@ namespace mystl {
 		//用[first, last)元素初始化vector
 		template <typename InputIterator>
 		void fill_initialize(InputIterator first, InputIterator last) {
-			iterator start = data_allocator::allocate(size_type(last - first));
-			end_ = uninitialized_copy(first, last, start);
-			start_ = start;
+			start_ = data_allocator::allocate(size_type(last - first));
+			end_ = uninitialized_copy(first, last, start_);
 			endofstorage_ = end_;
 		}
-
 
 		//释放已分配空间	
 		void deallocate() {
@@ -200,9 +199,6 @@ namespace mystl {
 		}
 	}
 
-
-
-
 	template<typename T, typename Alloc>
 	inline typename vector<T, Alloc>::iterator vector<T, Alloc>::erase(iterator position)
 	{
@@ -237,7 +233,7 @@ namespace mystl {
 	inline void vector<T, Alloc>::insert_aux(iterator pos, const T & value)
 	{
 		if (end_ != endofstorage_) {
-			copy_backward(pos, end_, end_ + 1);
+			copy_backward(pos, end_, end_ + 1);//?
 			*pos = value;
 			++end_;
 		}
@@ -255,7 +251,6 @@ namespace mystl {
 			endofstorage_ = start_ + newsize;
 		}
 	}
-
 
 	template<typename T, typename Alloc>
 	inline void vector<T, Alloc>::insert(iterator position, const size_type & n, const value_type & val)
@@ -302,7 +297,6 @@ namespace mystl {
 			}
 		}
 	}
-
 
 	template<typename T, typename Alloc>
 	template<class InputIterator>
@@ -361,6 +355,35 @@ namespace mystl {
 	template<typename T, typename Alloc>
 	bool operator<(const vector<T, Alloc>&x, const vector<T, Alloc>&y) {
 
+	}
+
+	template <typename T, typename Alloc /*= simple_alloc<T, alloc>*/>
+	void mystl::vector<T, Alloc>::reserve(size_type n)
+	{
+		if (capacity() < n) {
+			iterator result = data_allocator::allocate(n);
+			iterator newend = uninitialized_copy(start_, end_, result);
+			destroy(start_, end_);
+			deallocate();
+			start_ = result;
+			end_ = newend;
+			endofstorage_ = start_ + n;
+		}
+	}
+
+	template <typename T, typename Alloc>
+	void mystl::vector<T, Alloc>::swap(vector& v) {
+		pointer tmp = start_;
+		start_ = v.start_;
+		v.start_ = tmp;
+
+		tmp = end_;
+		end_ = v.end_;
+		v.end_ = tmp;
+
+		tmp = endofstorage_;
+		endofstorage_ = v.endofstorage_;
+		v.endofstorage_ = tmp;
 	}
 }
 

@@ -107,21 +107,6 @@ namespace mystl {
 		__pop_heap(first, last - 1, last - 1, Value_type(*(last - 1)), comp, (Distance*)(0));
 	}
 
-
-	template <class RandomAccessIterator, class Compare, class T, class Distance>
-	void __make_heap(RandomAccessIterator first, RandomAccessIterator last,
-		Compare comp, T*, Distance*) {
-		if (last - first < 2) return;
-		Distance len = last - first;
-		Distance parent = (len - 2) / 2;
-
-		while (true) {
-			__adjust_heap(first, parent, len, T(*(first + parent)), comp);
-			if (parent == 0) return;
-			parent--;
-		}
-	}
-
 	template <class RandomAccessIterator, class Compare>
 	inline void make_heap(RandomAccessIterator first, RandomAccessIterator last,
 		Compare comp = std::less<typename iterator_traits<RandomAccessIterator>::value_type>()) {
@@ -161,7 +146,7 @@ namespace mystl {
 		priority_queue() = default;
 		template <typename InputIterator>
 		priority_queue(InputIterator first, InputIterator last) : c(first, last) {
-			make_heap(c.begin(), c.end(), comp);
+			mystl::make_heap(c.begin(), c.end(), comp);
 		}
 		bool empty()const { return c.empty(); }
 		size_type size()const { return c.size(); }
@@ -171,7 +156,7 @@ namespace mystl {
 			push_heap(c.begin(), c.end(), comp);
 		}
 		void pop() {
-			pop_heap(c.begin(), c.end(), comp);
+			mystl::pop_heap(c.begin(), c.end(), comp);
 			c.pop_back();
 		}
 	};
