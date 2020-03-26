@@ -68,5 +68,11 @@
     <ClInclude Include="mystl_hashset.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="mystl_hashmap.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mystl_algorithm.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

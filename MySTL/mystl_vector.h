@@ -55,11 +55,11 @@ namespace mystl {
 		const_iterator begin() const { return start_; }
 		iterator end() { return end_; }
 		const_iterator end() const { return end_; }
-		//reverse_iterator rbegin() { return reverse_iterator(end()); }
+		reverse_iterator rbegin() { return reverse_iterator(end()); }
 		//const_reverse_iterator rbegin() const {
 		//	return const_reverse_iterator(end());
 		//}
-		//reverse_iterator rend() { return reverse_iterator(begin()); }
+		reverse_iterator rend() { return reverse_iterator(begin()); }
 		//const_reverse_iterator rend() const {
 		//	return const_reverse_iterator(begin());
 		//}
@@ -83,7 +83,7 @@ namespace mystl {
 		iterator insert(iterator position, const value_type& val);//元素动态增长由此实现
 		void insert(iterator position, const size_type& n, const value_type& val);
 		template <typename InputIterator>
-		void insert(iterator position, InputIterator first, InputIterator last);
+		void insert(iterator posi=tion, InputIterator first, InputIterator last);
 		iterator erase(iterator position);
 		iterator erase(iterator first, iterator last);
 
@@ -211,11 +211,10 @@ namespace mystl {
 	template<typename T, typename Alloc>
 	inline typename vector<T, Alloc>::iterator vector<T, Alloc>::erase(iterator first, iterator last)
 	{
-		iterator end = copy(last, end_, first);
+		iterator end = mystl::copy(last, end_, first);
 		destroy(end, end_);
 		end_ = end;
 		return end_;
-
 	}
 
 	template<typename T, typename Alloc>
@@ -370,6 +369,11 @@ namespace mystl {
 			end_ = newend;
 			endofstorage_ = start_ + n;
 		}
+	}
+
+	template <typename T, typename Alloc /*= simple_alloc<T, alloc>*/>
+	void mystl::vector<T, Alloc>::clear() {
+		destroy(start_, end_);
 	}
 
 	template <typename T, typename Alloc>

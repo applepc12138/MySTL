@@ -7,7 +7,7 @@
 #include "mystl_construct.h"
 //空间配置,以对象个数为单位
 namespace mystl {
-	template <typename T, typename Alloc>
+	template <typename T, typename Alloc = alloc>
 	class simple_alloc {
 	public:
 		static T *allocate();

@@ -3,6 +3,7 @@
 #define STL_ALGOBASE
 #include "mystl_iterator.h"
 #include "mytype_traits.h"
+#include "mystl_algorithm.h"
 #include <cstring>
 
 namespace mystl {
@@ -84,6 +85,35 @@ namespace mystl {
 		return result + (last - first);
 	}
 
+	/***********************************copy_n***************************************/
+
+
+	template <class InputIterator, class Size, class OutputIterator>
+	pair<InputIterator, OutputIterator> _copy_n(InputIterator first, Size count,
+		OutputIterator result, input_iterator_tag) 
+	{
+		for (; count > 0; --count, ++first, ++result)
+			*result = *first;
+		return pair<InputIterator, OutputIterator>(first, result);
+	}
+
+	template <class RandomAccessIterator, class Size, class OutputIterator>
+	inline pair<RandomAccessIterator, OutputIterator>
+		_copy_n(RandomAccessIterator first, Size count,
+			OutputIterator result, random_access_iterator_tag) 
+	{
+		RandomAccessIterator last = first + count;
+		return pair<RandomAccessIterator, OutputIterator>(last,
+			mystl::copy(first, last, result));
+	}
+
+	template< class InputIt, class Size, class OutputIt >
+	OutputIt copy_n(InputIt first, Size count, OutputIt result)
+	{
+		_copy_n(first, count, result, iterator_category(first));
+	}
+
+
 	/*********************************copy_backward**********************************/
 
 	//泛化
@@ -156,6 +186,152 @@ namespace mystl {
 		for (; n > 0; --n, ++first)
 			*first = value;
 		return first;
+	}
+
+	/************************************generate***************************************/
+	//以给定函数对象 g 所生成的值赋值范围 [first, last) 中的每个元素
+	template< class ForwardIt, class Generator >
+	void generate(ForwardIt first, ForwardIt last, Generator g)
+	{
+		for (; first != last; ++first) {
+			*first = g();
+		}
+	}
+
+	//若 count>0 ，则赋值给定函数对象 g 所生成的值给始于 first 的范围的首 count 个元素。否则不做任何事
+	template< class OutputIt, class Size, class Generator >
+	void generate_n(OutputIt first, Size count, Generator g)
+	{
+		if (count > 0) {
+			for (; count != 0 && first != last; ++first) {
+				*first = g();
+			}
+		}
+	}
+
+	//复制来自范围 [first, last) 的元素到始于 d_first 的另一范围，省略满足特定判别标准的元素。源与目标范围不能重叠
+	//忽略所有等于 value 的元素,返回指向最后被复制元素的迭代器
+	template< class InputIt, class OutputIt, class T >
+	OutputIt remove_copy(InputIt first, InputIt last, OutputIt d_first, const T& value)
+	{
+		for (; first != last; ++first) {
+			if (*first != value)
+				*d_first++ = *first;
+		}
+		return d_first;
+	}
+
+	//复制来自范围 [first, last) 的元素到始于 d_first 的另一范围，省略满足特定判别标准的元素。源与目标范围不能重叠
+	//忽略所有谓词 p 对其返回 true 的元素,返回指向最后被复制元素的迭代器
+	template< class InputIt, class OutputIt, class UnaryPredicate >
+	OutputIt remove_copy_if(InputIt first, InputIt last, OutputIt d_first, UnaryPredicate p)
+	{
+		for (; first != last; ++first) {
+			if (!p(*first))
+				*d_first++ = *first;
+		}
+		return d_first;
+	}
+	
+	//从范围 [first, last) 移除所有等于 value 的元素，并返回范围新结尾的尾后迭代器
+	//调用 remove可后随调用容器的 erase 方法，它擦除未指定值并减小容器的物理大小，以匹配其新的逻辑大小
+	template< class ForwardIt, class T >
+	ForwardIt remove(ForwardIt first, ForwardIt last, const T& value)
+	{
+		first = find(first, last, value);
+		ForwardIt next = first;
+		return first == last ? last: remove_copy(++next, last, first, value);
+	}
+
+	//从范围 [first, last) 移除所有 p 对于它返回 true 的元素，用 operator== 比较它们，并返回范围新结尾的尾后迭代器
+	template< class ForwardIt, class UnaryPredicate >
+	ForwardIt remove_if(ForwardIt first, ForwardIt last, UnaryPredicate p)
+	{
+		first = find_if(first, last, p);
+		ForwardIt next = first;
+		return first == last ? last : remove_copy_if(++next, last, first, p);
+	}
+
+	//以 new_value 替换范围 [first, last) 中所有等于 old_value 的元素
+	template< class ForwardIt, class T >
+	void replace(ForwardIt first, ForwardIt last, const T& old_value, const T& new_value)
+	{
+		for (; first != last; ++first) {
+			if (*first == old_value)
+				*first = new_value;
+		}
+	}
+
+	//以 new_value 替换范围 [first, last) 中所有谓词 p 对其返回 true 的元素
+	template< class ForwardIt, class UnaryPredicate, class T >
+	void replace_if(ForwardIt first, ForwardIt last, UnaryPredicate p, const T& new_value)
+	{
+		for (; first != last; ++first) {
+			if (p(*first))
+				*first = new_value;
+		}
+	}
+
+	//交换 a 与 b
+	template< class T >
+	void swap(T& a, T& b) noexcept
+	{
+		auto tmp = a;
+		a = b;
+		b = tmp;
+	}
+
+	//交换 a 与 b 数组
+	template< class T2, std::size_t N >
+	void swap(T2(&a)[N], T2(&b)[N]) noexcept
+	{
+
+	}
+
+	//交换给定的迭代器所指向的元素的值
+	template<class ForwardIt1, class ForwardIt2>
+	constexpr void iter_swap(ForwardIt1 a, ForwardIt2 b) 
+	{
+		swap(*a, *b);
+	}
+
+	template <class BidirectionalIt>
+	void _reverse(BidirectionalIt first, BidirectionalIt last,
+		bidirectional_iterator_tag) {
+		while (true)
+			if (first == last || first == --last)
+				return;
+			else
+				iter_swap(first++, last);
+	}
+
+	template <class RandomAccessIt>
+	void _reverse(RandomAccessIt first, RandomAccessIt last,
+		random_access_iterator_tag) {
+		while (first < last) 
+			iter_swap(first++, --last);
+	}
+
+	//反转 [first, last) 范围中的元素顺序
+	template< class BidirIt >
+	void reverse(BidirIt first, BidirIt last)
+	{
+		_reverse(first, last);
+	}
+
+	//从来自范围 [first, last) 的相继等价元素组移除相同的元素，序列必须有序，用 operator== 比较元素,并返回范围的新逻辑结尾的尾后迭代器
+	template< class ForwardIt >
+	ForwardIt unique(ForwardIt first, ForwardIt last)
+	{
+		
+	}
+
+
+	//从来自范围 [first, last) 的相继等价元素组移除相同的元素，序列必须有序，用给定的谓词 p 比较元素,并返回范围的新逻辑结尾的尾后迭代器
+	template< class ForwardIt, class BinaryPredicate >
+	ForwardIt unique(ForwardIt first, ForwardIt last, BinaryPredicate p)
+	{
+
 	}
 
 }

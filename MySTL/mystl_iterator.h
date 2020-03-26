@@ -128,8 +128,180 @@ namespace mystl
 			
 	}
 
+	template <typename Container>
+	struct insert_iterator {
+	public:
+		typedef insert_iterator<container> self;
 
+		typedef output_iterator_tag iterator_category;
+		typedef void value_type;
+		typedef void pointer;
+		typedef void reference;
+		typedef void difference_type;
 
+	private:
+		Container * container;//绑定插入元素容器的指针
+	public:
+		insert_iterator(Container& c) : container(&c) {}
+		self& operator=(typename Container::value_type& v) {
+			container->insert(v);
+			return *this;
+		}
+
+		self& operator*() { return *this; }
+		self& operator++() { return *this; }
+		self& operator++(int) { return *this; }
+	};
+
+	template <typename Container>
+	struct front_insert_iterator {
+	public:
+		typedef front_insert_iterator<container> self;
+
+		typedef output_iterator_tag iterator_category;
+		typedef void value_type;
+		typedef void pointer;
+		typedef void reference;
+		typedef void difference_type;
+
+	private:
+		Container * container;//绑定插入元素的指针
+	public:
+		front_insert_iterator(Container& c) : container(&c) {}
+		self& operator=(typename Container::value_type& v) {
+			container->push_front(v);
+			return *this;
+		}
+
+		self& operator*() { return *this; }
+		self& operator++() { return *this; }
+		self& operator++(int) { return *this; }
+	};
+	template <typename Container>
+	struct back_insert_iterator {
+	public:
+		typedef back_insert_iterator<container> self;
+
+		typedef output_iterator_tag iterator_category;
+		typedef void value_type;
+		typedef void pointer;
+		typedef void reference;
+		typedef void difference_type;
+
+	private:
+		Container * container;//绑定插入元素的指针
+	public:
+		insert_iterator(container& c) : container(&c) {}
+		self& operator=(typename Container::value_type& v) {
+			container->push_back(v);
+			return *this;
+		}
+
+		self& operator*() { return *this; }
+		self& operator++() { return *this; }
+		self& operator++(int) { return *this; }
+	};
+
+	template <typename Iterator>
+	struct reverse_iterator {
+	private:
+		Iterator current;
+	public:
+		typedef typename iterator_traits<Iterator>::iterator_category iterator_category;
+		typedef	typename iterator_traits<Iterator>::difference_type difference_type;
+		typedef	typename iterator_traits<Iterator>::value_type value_type;
+		typedef	typename iterator_traits<Iterator>::pointer pointer;
+		typedef	typename iterator_traits<Iterator>::reference reference;
+
+		typedef reverse_iterator<Iterator> self;
+		typedef Iterator iterator_type;
+	public:
+		explicit reverse_iterator(iterator_type iter) : current(iter) {}
+		reverse_iterator(const self& x) : current(x.current) {}
+	public:
+		iterator_type base()const { return current; }
+
+		reference operator*()const {
+			iterator_type tmp = current;//this.current 其中this类型为 const self*const currentb被赋予const属性
+			return *--tmp;
+		}
+		pointer operator->()const { return &(operator*()); }
+		self& operator++() {
+			--current;
+			return *this;
+		}
+		self operator++(int) {
+			iterator_type tmp = current;
+			--current;
+			return reverse_iterator(tmp);
+		}
+		self& operator--() {
+			++current;
+			return *this;
+		}
+		self operator--(int) {
+			iterator_type tmp = current;
+			++current;
+			return reverse_iterator(tmp);
+		}
+		self& operator+=(difference_type n) {
+			current -= n;
+			return *this;
+		}
+		self operator+(difference_type n)const {
+			return current - n;
+		}
+		self& operator-=(difference_type n) {
+			current += n;
+			return *this;
+		}
+		self operator-(difference_type n)const {
+			return current + n;
+		}
+	};
+
+	// 重载比较操作符
+	template <class Iterator>
+	bool operator==(const reverse_iterator<Iterator>& lhs,
+		const reverse_iterator<Iterator>& rhs)
+	{
+		return lhs.base() == rhs.base();
+	}
+
+	template <class Iterator>
+	bool operator<(const reverse_iterator<Iterator>& lhs,
+		const reverse_iterator<Iterator>& rhs)
+	{
+		return rhs.base() < lhs.base();
+	}
+
+	template <class Iterator>
+	bool operator!=(const reverse_iterator<Iterator>& lhs,
+		const reverse_iterator<Iterator>& rhs)
+	{
+		return !(lhs == rhs);
+	}
+
+	template <class Iterator>
+	bool operator>(const reverse_iterator<Iterator>& lhs,
+		const reverse_iterator<Iterator>& rhs)
+	{
+		return rhs < lhs;
+	}
+
+	template <class Iterator>
+	bool operator<=(const reverse_iterator<Iterator>& lhs,
+		const reverse_iterator<Iterator>& rhs)
+	{
+		return !(rhs < lhs);
+	}
+
+	template <class Iterator>
+	bool operator>=(const reverse_iterator<Iterator>& lhs,
+		const reverse_iterator<Iterator>& rhs)
+	{
+		return !(lhs < rhs);
+	}
 }
 
 

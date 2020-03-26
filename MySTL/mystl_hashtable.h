@@ -61,10 +61,11 @@ namespace mystl {
 				while (bucket < ht->buckets.size()) {
 					if (ht->buckets[bucket]) {
 						cur = ht->buckets[bucket];
-						break;
+						return *this;
 					}
 					++bucket;
 				}
+				cur = nullptr;//置为尾后节点
 			}
 			return *this;
 		}
@@ -105,7 +106,7 @@ namespace mystl {
 
 		public:
 			hashtable_const_iterator() = default;
-			hashtable_const_iterator(const node* _n, const hashtable* _ht) : cur(_n), ht(_ht) {}
+			hashtable_const_iterator(const node* _n,const hashtable* _ht) : cur(_n), ht(_ht) {}
 			hashtable_const_iterator(const iterator& iter) : cur(iter.cur), ht(iter.ht) {}
 		public:
 			reference operator*()const {//const hashtable_iterator<Value, Key>* const this
@@ -124,10 +125,11 @@ namespace mystl {
 					while (bucket < ht->buckets.size()) {
 						if (ht->buckets[bucket]) {
 							cur = ht->buckets[bucket];
-							break;
+							return *this;
 						}
 						++bucket;
 					}
+					cur = nullptr;//置为尾后节点
 				}
 				return *this;
 			}
@@ -173,6 +175,12 @@ namespace mystl {
 	typename EqualKey, typename Alloc = simple_alloc<hashtable_node<Value>, alloc>>
 	class hashtable {
 		friend bool operator==(const hashtable& h1, const hashtable& h2);
+		template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
+			typename EqualKey, typename Alloc>
+		friend	struct hashtable_iterator;
+		template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
+			typename EqualKey, typename Alloc>
+			friend	struct hashtable_const_iterator;
 	public:
 		typedef Alloc data_allocator;
 		typedef hashtable_node<Value> node;
@@ -253,17 +261,16 @@ namespace mystl {
 		const_iterator begin()const {
 			for (size_type n = 0; n < buckets.size(); ++n) {
 				if (buckets[n])
-					return const_iterator(buckets[n], this);
+					return const_iterator(buckets[n], this);//this指针类型为const hashtable*const,const_iterator构造函数参数也必须为const hashtable*
 			}
 			return const_iterator(nullptr, this);
-
 		}
 		iterator end() { return iterator(nullptr, this); }
 		const_iterator end()const { return const_iterator(nullptr, this); }
 
 		size_type bucket_count()const { return buckets.size(); }
 		size_type max_bucket_count()const { return stl_prime_list[stl_num_primes - 1]; }
-		size_type element_in_bucket(size_type n)const {
+		size_type elems_in_bucket(size_type n)const {
 			size_type i = 0;
 			for (auto p = buckets[n]; p != nullptr; ) {
 				++i;
@@ -291,18 +298,27 @@ namespace mystl {
 			insert_equal(first, last, iterator_category(first));
 		}
 
+		size_type erase(const key_type& key);
+		void erase(const iterator& iter);
+		void erase(const const_iterator& iter);
+		void erase(iterator first, iterator last);
+
 		size_type size()const { return num_elements; }
 		size_type max_size()const { return size_type(-1); }
 		bool empty()const { return num_elements == 0; }
 
 		iterator find(const key_type& key);
 		const_iterator find(const key_type& key)const;
+		reference find_or_insert(const value_type& key);
 		size_type count(const key_type& key)const;
+		pair<iterator, iterator> equal_range(const key_type& key);
+
 		
 		void clear();
 	private:
 		pair<iterator, bool> insert_unique_noresize(const value_type& v);
 		iterator insert_equal_noresize(const value_type& v);
+
 		template <class InputIterator>
 		void insert_unique(InputIterator f, InputIterator l,
 			input_iterator_tag)
@@ -341,6 +357,8 @@ namespace mystl {
 				insert_equal_noresize(*f);
 		}
 
+		void erase_bucket(size_type n, node* first, node* last);//删除第n个'桶'中[first, last)元素
+		void erase_bucket(size_type n, node* last);
 
 		void resize(size_type num_elem_hint);//判断是否需要重建表格
 
@@ -365,6 +383,175 @@ namespace mystl {
 		}
 
 	};
+
+	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
+		typename EqualKey, typename Alloc /*= simple_alloc<hashtable_node<Value>, alloc>*/>
+		mystl::pair<typename mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::iterator,
+				typename mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::iterator>
+		mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::equal_range(const key_type& key)
+	{
+		size_type bucket = bkt_num_key(key);
+		for (node* first = buckets[bucket]; first != nullptr; first = first->next) {
+			if (equals(get_key(first->value), key)) {
+				for (node* cur = first->next; cur != nullptr; cur = cur->next) {
+					if (!equals(get_key(cur->value), key))
+						return pair<iterator, iterator>(iterator(first, this), iterator(cur, this));
+				}
+				for (size_type m = bucket + 1; m < buckets.size(); ++m) {
+					if (buckets[m]) {
+						return pair<iterator, iterator>(iterator(first, this), iterator(buckets[m], this));
+					}
+				}
+				return pair<iterator, iterator>(iterator(first, this), iterator(nullptr, this));
+			}
+			
+		}
+		return pair<iterator, iterator>(iterator(nullptr, this), iterator(nullptr, this));
+	}
+
+	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
+		typename EqualKey, typename Alloc /*= simple_alloc<hashtable_node<Value>, alloc>*/>
+	typename mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::reference 
+		mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::find_or_insert(const value_type& v)
+	{
+		size_type bucket = bkt_num(v);
+		node* cur = buckets[bucket];
+		while (cur) {
+			if (equals(get_key(cur->value), get_key(v))) 
+				return cur->value;
+			cur = cur->next;
+		}
+		cur = new_node(v);
+		cur->next = buckets[bucket];
+		buckets[bucket] = cur;
+		++num_elements;
+		return cur->value;
+	}
+
+	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
+		typename EqualKey, typename Alloc /*= simple_alloc<hashtable_node<Value>, alloc>*/>
+		void mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::erase_bucket(size_type n, node* last)
+	{
+		node* cur = buckets[n];
+		while (cur != last) {
+			buckets[n] = cur->next;
+			delete_node(cur);
+			cur = buckets[n];
+			--num_elements;
+		}
+	}
+
+	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
+		typename EqualKey, typename Alloc /*= simple_alloc<hashtable_node<Value>, alloc>*/>
+		void mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::erase_bucket(size_type n, node* first, node* last)
+	{
+		node* cur = buckets[n];
+		if (cur == first)
+			erase_bucket(n, last);
+		else {
+			node* pre = cur;
+			cur = cur->next;
+			for (; cur != first; pre = cur, cur = cur->next)
+				;
+			while (cur != last) {//SGI 2.9中???
+				node* tmp = cur;
+				cur = cur->next;
+				delete_node(tmp);
+			}
+			pre->next = last;
+		}
+	}
+
+	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
+		typename EqualKey, typename Alloc /*= simple_alloc<hashtable_node<Value>, alloc>*/>
+		void mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::erase(iterator first, iterator last)
+	{
+		size_type f_bucket = first.cur ? bkt_num(first.cur->value) : buckets.size();
+		size_type l_bucket = last.cur ? bkt_num(last.cur->value) : buckets.size();
+
+		if (first.cur == last.cur)
+			return;
+		else if (f_bucket == l_bucket)//同一个'桶'中
+			erase_bucket(f_bucket, first.cur, last.cur);
+		else {
+			erase_bucket(f_bucket, first.cur, nullptr);
+			for (size_type n = f_bucket + 1; n < l_bucket; ++n)
+				erase_bucket(n, nullptr);
+			if (l_bucket != buckets.size())
+				erase_bucket(l_bucket, last.cur);
+		}
+	}
+
+	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
+		typename EqualKey, typename Alloc /*= simple_alloc<hashtable_node<Value>, alloc>*/>
+		void mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::erase(const const_iterator& iter)
+	{
+		erase(iterator(const_cast<node*>(it.cur), const_cast<hashtable*>(it.ht)));
+	}
+
+	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
+		typename EqualKey, typename Alloc /*= simple_alloc<hashtable_node<Value>, alloc>*/>
+		void mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::erase(const iterator& iter)//删除会使迭代器iter失效
+	{
+		node*const p = iter.cur;
+		if (p) {
+			const size_type bucket = bkt_num_key(p->value);
+			node* cur = buckets[bucket];
+			if (cur == p) {//要删除的是第一个节点
+				buckets[bucket] = cur->next;
+				delete_node(p);
+				--num_elements;
+				return;
+			}
+			node* pre = cur;
+			cur = cur->next;
+			while (cur) {
+				if (cur == p) {
+					pre->next = cur->next;
+					delete_node(p);
+					--num_elements;
+					return;
+				}
+				pre = cur;
+				cur = cur->next;
+			}
+		}
+	}
+
+	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
+		typename EqualKey, typename Alloc /*= simple_alloc<hashtable_node<Value>, alloc>*/>
+		typename mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::size_type 
+		mystl::hashtable<Value, Key, HashFunc, ExtractKey, EqualKey, Alloc>::erase(const key_type& key)
+	{
+		size_type erased = 0;
+		size_type bucket = bkt_num_key(key);
+		node* cur = buckets[bucket];
+		if (cur) {
+			node* pre = cur;
+			cur = cur->next;
+			while (cur) {
+				if (equals(get_key(cur->value), key)) {
+					++erased;
+					--num_elements;
+					pre->next = cur->next;
+					delete_node(cur);
+					cur = pre->next;
+				}
+				else {
+					pre = cur;
+					cur = cur->next;
+				}
+			}
+			if (equals(get_key(buckets[bucket]->value), key)) {//判断第一个节点是否与key相等
+				++erased;
+				--num_elements;
+				pre = buckets[bucket];
+				buckets[bucket] = pre->next;
+				delete_node(pre);
+			}
+		}
+		return erased;
+	}
 
 	template <typename Value, typename Key, typename HashFunc, typename ExtractKey,
 		typename EqualKey, typename Alloc /*= simple_alloc<hashtable_node<Value>, alloc>*/>

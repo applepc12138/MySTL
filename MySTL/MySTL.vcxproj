@@ -156,11 +156,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mystl_algobase.h" />
+    <ClInclude Include="mystl_algorithm.h" />
     <ClInclude Include="mystl_allocator.h" />
     <ClInclude Include="defalloc.h" />
     <ClInclude Include="jjalloc.h" />
     <ClInclude Include="mystl_alloc.h" />
     <ClInclude Include="mystl_construct.h" />
+    <ClInclude Include="mystl_hashmap.h" />
     <ClInclude Include="mystl_hashset.h" />
     <ClInclude Include="mystl_hashtable.h" />
     <ClInclude Include="mystl_iterator.h" />
