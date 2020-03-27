@@ -294,7 +294,7 @@ namespace mystl {
 		for( ; first != last; ++first){
 			auto cur1 = first;
 			auto cur2 = s_first;
-			for ( ; cur1 != last && cur2 != s_last; ++cur, ++cur2) {
+			for ( ; cur1 != last && cur2 != s_last; ++cur1, ++cur2) {
 				if(*cur1 != *cur2)
 					break;
 			}
@@ -312,7 +312,7 @@ namespace mystl {
 		for ( ; first != last; ++first) {
 			auto cur1 = first;
 			auto cur2 = s_first;
-			for (; cur1 != last && cur2 != s_last; ++cur, ++cur2) {
+			for (; cur1 != last && cur2 != s_last; ++cur1, ++cur2) {
 				if (P(*cur1, *cur2))
 					break;
 			}
@@ -332,7 +332,8 @@ namespace mystl {
 			return last;
 		while (first != last) {
 			auto m = count;
-			for (auto cur = first; m != 0 && cur != last; ++cur) {
+			auto cur = first;
+			for (; m != 0 && cur != last; ++cur) {
 				if (*cur != value) {
 					first = ++cur;
 					break;
@@ -357,7 +358,8 @@ namespace mystl {
 			return last;
 		while (first != last) {
 			auto m = count;
-			for (auto cur = first; m != 0 && cur != last; ++cur) {
+			auto cur = first;
+			for (; m != 0 && cur != last; ++cur) {
 				if (p(*cur,value)) {
 					first = ++cur;
 					break;
