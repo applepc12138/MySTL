@@ -9,10 +9,10 @@
 namespace mystl {
 
 	/***********************************copy*****************************************/
-	//InputIterator
-	template <typename InputIterator, typename OutputIterator>
-	inline OutputIterator _copy(InputIterator first, InputIterator last,
-		OutputIterator result, input_iterator_tag)
+	//InputIt
+	template <typename InputIt, typename OutputIt>
+	inline OutputIt _copy(InputIt first, InputIt last,
+		OutputIt result, input_iterator_tag)
 	{
 		for (; first != last; ++result, ++first)
 			*result = *first;
@@ -21,9 +21,9 @@ namespace mystl {
 
 
 	//RandomAccessIterator
-	template <typename RandomAccessIterator, typename OutputIterator>
-	inline OutputIterator _copy(RandomAccessIterator first, RandomAccessIterator last,
-			OutputIterator result, random_access_iterator_tag)
+	template <typename RandomAccessIterator, typename OutputIt>
+	inline OutputIt _copy(RandomAccessIterator first, RandomAccessIterator last,
+			OutputIt result, random_access_iterator_tag)
 	{
 		typedef typename iterator_traits<RandomAccessIterator>::difference_type Distance;
 		for (Distance n = last - first; n > 0; --n, ++first, ++result) 
@@ -34,10 +34,10 @@ namespace mystl {
 
 
 	//泛化版本
-	template <typename InputIterator, typename OutputIterator>
+	template <typename InputIt, typename OutputIt>
 	struct _copy_dispatch{
-		OutputIterator operator()(InputIterator first, InputIterator last, OutputIterator result) {
-			typedef typename iterator_traits<InputIterator>::iterator_category t;//
+		OutputIt operator()(InputIt first, InputIt last, OutputIt result) {
+			typedef typename iterator_traits<InputIt>::iterator_category t;//
 			//std::cout << typeid(&t()).name() << std::endl; //可能为struct std::random_access_iterator_tag *
 			return _copy(first, last, result, t());//注意!如果重定义迭代器类型的话,这里的random_access_iterator_tag与std::random_access_iterator_tag不同
 		}
@@ -75,9 +75,9 @@ namespace mystl {
 	};
 
 	//对外接口
-	template <typename InputIterator, typename OutputIterator>
-	inline OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result) {
-		return _copy_dispatch<InputIterator, OutputIterator>()(first, last, result);
+	template <typename InputIt, typename OutputIt>
+	inline OutputIt copy(InputIt first, InputIt last, OutputIt result) {
+		return _copy_dispatch<InputIt, OutputIt>()(first, last, result);
 	}
 
 	inline char* copy(const char *first, const char *last, char *result) {
@@ -88,22 +88,22 @@ namespace mystl {
 	/***********************************copy_n***************************************/
 
 
-	template <class InputIterator, class Size, class OutputIterator>
-	pair<InputIterator, OutputIterator> _copy_n(InputIterator first, Size count,
-		OutputIterator result, input_iterator_tag) 
+	template <class InputIt, class Size, class OutputIt>
+	pair<InputIt, OutputIt> _copy_n(InputIt first, Size count,
+		OutputIt result, input_iterator_tag) 
 	{
 		for (; count > 0; --count, ++first, ++result)
 			*result = *first;
-		return pair<InputIterator, OutputIterator>(first, result);
+		return pair<InputIt, OutputIt>(first, result);
 	}
 
-	template <class RandomAccessIterator, class Size, class OutputIterator>
-	inline pair<RandomAccessIterator, OutputIterator>
+	template <class RandomAccessIterator, class Size, class OutputIt>
+	inline pair<RandomAccessIterator, OutputIt>
 		_copy_n(RandomAccessIterator first, Size count,
-			OutputIterator result, random_access_iterator_tag) 
+			OutputIt result, random_access_iterator_tag) 
 	{
 		RandomAccessIterator last = first + count;
-		return pair<RandomAccessIterator, OutputIterator>(last,
+		return pair<RandomAccessIterator, OutputIt>(last,
 			mystl::copy(first, last, result));
 	}
 
@@ -181,8 +181,8 @@ namespace mystl {
 			*first = value;
 	}
 
-	template <class OutputIterator, class Size, class T>
-	OutputIterator fill_n(OutputIterator first, Size n, const T& value) {
+	template <class OutputIt, class Size, class T>
+	OutputIt fill_n(OutputIt first, Size n, const T& value) {
 		for (; n > 0; --n, ++first)
 			*first = value;
 		return first;
@@ -295,8 +295,8 @@ namespace mystl {
 		swap(*a, *b);
 	}
 
-	template <class BidirectionalIt>
-	void _reverse(BidirectionalIt first, BidirectionalIt last,
+	template <class BidirIt>
+	void _reverse(BidirIt first, BidirIt last,
 		bidirectional_iterator_tag) {
 		while (true)
 			if (first == last || first == --last)
@@ -319,11 +319,105 @@ namespace mystl {
 		_reverse(first, last);
 	}
 
+
+	/**************************************unique_copy********************************************/
+	//forward_iterator_tag
+	template <class InputIt, class ForwardIt>
+	ForwardIt _unique_copy(InputIt first, InputIt last,
+		ForwardIt result, forward_iterator_tag) {
+		*result = *first;
+		while (++first != last)
+			if (*result != *first)
+				*++result = *first;
+		return ++result;
+	}
+
+
+	template <class InputIt, class OutputIt, class T>
+	OutputIt _unique_copy(InputIt first, InputIt last,
+		OutputIt result, T*) {
+		T value = *first;
+		*result = value;
+		while (++first != last)
+			if (value != *first) {//? 注意不能*result
+				value = *first;
+				*++result = value;
+			}
+		return ++result;
+	}
+
+	//output_iterator_tag
+	// 由于 output iterator 只能进行写操作，所以不能有 *result != *first 这样的判断
+	template <class InputIt, class OutputIt>
+	inline OutputIt _unique_copy(InputIt first, InputIt last,
+		OutputIt result,
+		output_iterator_tag) {
+		return _unique_copy(first, last, result, value_type(first));
+	}
+
+
+	//从范围 [first, last) 复制元素到始于 d_first 的另一范围，使得无连续的相等元素。只复制每组等价元素的首元素
+	//用 operator== 比较元素,返回指向最后被写入元素后一元素的输出迭代器
+	template <class InputIt, class OutputIt>
+	inline OutputIt unique_copy(InputIt first, InputIt last,
+		OutputIt d_first) {
+		if (first == last) return d_first;
+		return _unique_copy(first, last, d_first, iterator_category(d_first));
+	}
+
+	template <class InputIt, class ForwardIt, class BinaryPredicate>
+	ForwardIt _unique_copy(InputIt first, InputIt last,
+		ForwardIt result,
+		BinaryPredicate p,
+		forward_iterator_tag) {
+		*result = *first;
+		while (++first != last)
+			if (!p(*result, *first)) *++result = *first;
+		return ++result;
+	}
+
+	template <class InputIt, class OutputIt, class BinaryPredicate,
+		class T>
+		OutputIt _unique_copy(InputIt first, InputIt last,
+			OutputIt result,
+			BinaryPredicate p, T*) {
+		T value = *first;
+		*result = value;
+		while (++first != last)
+			if (!p(value, *first)) {
+				value = *first;
+				*++result = value;
+			}
+		return ++result;
+	}
+
+	template <class InputIt, class OutputIt, class BinaryPredicate>
+	inline OutputIt _unique_copy(InputIt first, InputIt last,
+		OutputIt result,
+		BinaryPredicate p,
+		output_iterator_tag) {
+		return _unique_copy(first, last, result, p, value_type(first));
+	}
+
+
+	//从范围 [first, last) 复制元素到始于 d_first 的另一范围，使得无连续的相等元素。只复制每组等价元素的首元素
+	//用给定的二元谓词 p 比较元素,返回指向最后被写入元素后一元素的输出迭代器
+	template <class InputIt, class OutputIt, class BinaryPredicate>
+	inline OutputIt unique_copy(InputIt first, InputIt last,
+		OutputIt d_first,
+		BinaryPredicate p) {
+		if (first == last) return d_first;
+		return _unique_copy(first, last, d_first, p,
+			iterator_category(d_first));
+	}
+
+
 	//从来自范围 [first, last) 的相继等价元素组移除相同的元素，序列必须有序，用 operator== 比较元素,并返回范围的新逻辑结尾的尾后迭代器
 	template< class ForwardIt >
 	ForwardIt unique(ForwardIt first, ForwardIt last)
 	{
-		
+		first = adjacent_find(first, last);
+		return unique_copy(first, last, first);
 	}
 
 
@@ -331,7 +425,8 @@ namespace mystl {
 	template< class ForwardIt, class BinaryPredicate >
 	ForwardIt unique(ForwardIt first, ForwardIt last, BinaryPredicate p)
 	{
-
+		first = adjacent_find(first, last, p);
+		return unique_copy(first, last, first, p);
 	}
 
 }

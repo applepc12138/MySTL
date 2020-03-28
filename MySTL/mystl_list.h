@@ -325,7 +325,7 @@ namespace mystl {
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::reverse()
 	{
-		if ( node == node->next || node = node->next->next )//零或一个元素
+		if ( node == node->next || node == node->next->next )//零或一个元素
 			return;
 		auto cur = begin();
 		++cur;//注意!!!这里必须++cur

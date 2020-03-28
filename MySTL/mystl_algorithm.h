@@ -109,7 +109,7 @@ namespace mystl {
 		return last;
 	}
 
-
+	//返回范围[first, last) 中满足谓词 p 对其返回 true 的首个元素
 	template< class InputIt, class UnaryPredicate >
 	InputIt find_if(InputIt first, InputIt last, UnaryPredicate p)
 	{
@@ -120,7 +120,7 @@ namespace mystl {
 		return last;
 	}
 
-
+	//返回范围 [first, last) 中满足谓词 q 对其返回 false 的首个元素
 	template< class InputIt, class UnaryPredicate >
 	InputIt find_if_not(InputIt first, InputIt last, UnaryPredicate p)
 	{
@@ -133,7 +133,7 @@ namespace mystl {
 
 
 	template <typename ForwardIt1, typename ForwardIt2>
-	ForwordIt1 find_end_dispatch(ForwardIt1 first1, ForwardIt1 last1, ForwardIt2 first2, ForwardIt2 last2,
+	ForwardIt1 find_end_dispatch(ForwardIt1 first1, ForwardIt1 last1, ForwardIt2 first2, ForwardIt2 last2,
 		forward_iterator_tag, forward_iterator_tag)
 	{
 		if (first2 == last2)
@@ -375,6 +375,34 @@ namespace mystl {
 	}
 
 
+	//若范围 [first, last) 中的所有满足 p 的元素都出现在所有不满足的元素前则返回 true 。若 [first, last) 为空亦返回 true
+	template< class InputIt, class UnaryPredicate >
+	bool is_partitioned(InputIt first, InputIt last, UnaryPredicate p)
+	{
+		while (first != last && p(*first))
+			++first;
+		while (first != last && !p(*first))
+			++first;
+		return first == last;
+	}
+
+	//重排序范围 [first, last) 中的元素，使得谓词 p 对其返回 true 的元素前于谓词 p 对其返回 false 的元素。不保持相对顺序
+	//返回指向第二组元素首元素的迭代器
+	template< class ForwardIt, class UnaryPredicate >
+	ForwardIt partition(ForwardIt first, ForwardIt last, UnaryPredicate p)
+	{
+		auto pre = find_if_not(first, last, p);
+		if (pre == last) 
+			return last;
+
+		for (ForwardIt cur = ++pre; cur != last; ++cur) {//前后指针法
+			if (p(*cur)) {
+				iter_swap(cur, pre);
+				++pre;
+			}
+		}
+		return pre;
+	}
 
 }
 

@@ -131,7 +131,7 @@ namespace mystl
 	template <typename Container>
 	struct insert_iterator {
 	public:
-		typedef insert_iterator<container> self;
+		typedef insert_iterator<Container> self;
 
 		typedef output_iterator_tag iterator_category;
 		typedef void value_type;
@@ -156,7 +156,7 @@ namespace mystl
 	template <typename Container>
 	struct front_insert_iterator {
 	public:
-		typedef front_insert_iterator<container> self;
+		typedef front_insert_iterator<Container> self;
 
 		typedef output_iterator_tag iterator_category;
 		typedef void value_type;
@@ -180,7 +180,7 @@ namespace mystl
 	template <typename Container>
 	struct back_insert_iterator {
 	public:
-		typedef back_insert_iterator<container> self;
+		typedef back_insert_iterator<Container> self;
 
 		typedef output_iterator_tag iterator_category;
 		typedef void value_type;
@@ -191,7 +191,7 @@ namespace mystl
 	private:
 		Container * container;//绑定插入元素的指针
 	public:
-		insert_iterator(container& c) : container(&c) {}
+		back_insert_iterator(Container& c) : container(&c) {}
 		self& operator=(typename Container::value_type& v) {
 			container->push_back(v);
 			return *this;
