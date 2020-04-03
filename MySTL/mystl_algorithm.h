@@ -4,6 +4,7 @@
 
 #include "mystl_iterator.h"
 #include "mystl_pair.h"
+#include "mystl_queue.h"
 
 namespace mystl {
 	 
@@ -381,7 +382,7 @@ namespace mystl {
 	{
 		while (first != last && p(*first))
 			++first;
-		while (first != last && !p(*first))
+		while (first != last && !(p(*first)))
 			++first;
 		return first == last;
 	}
@@ -391,11 +392,11 @@ namespace mystl {
 	template< class ForwardIt, class UnaryPredicate >
 	ForwardIt partition(ForwardIt first, ForwardIt last, UnaryPredicate p)
 	{
-		auto pre = find_if_not(first, last, p);
+		ForwardIt pre = mystl::find_if_not(first, last, p);
 		if (pre == last) 
 			return last;
 
-		for (ForwardIt cur = ++pre; cur != last; ++cur) {//前后指针法
+		for (ForwardIt cur = std::next(pre); cur != last; ++cur) {//前后指针法  next返回pre后继
 			if (p(*cur)) {
 				iter_swap(cur, pre);
 				++pre;
@@ -404,6 +405,179 @@ namespace mystl {
 		return pre;
 	}
 
+	//检查 [first, last) 中的元素是否以不降序排序,用 operator< 比较元素
+	template< class ForwardIt >
+	bool is_sorted(ForwardIt first, ForwardIt last)
+	{
+		if (first == last)
+			return true;
+		for (auto pre = first++; first != last; ++first, ++pre) {
+			if (*first > *pre)
+				return false;
+		}
+		return true;
+	}
+
+	//检查 [first, last) 中的元素是否以不降序排序,用给定的二元比较函数 comp 比较元素
+	template< class ForwardIt, class Compare >
+	bool is_sorted(ForwardIt first, ForwardIt last, Compare comp)
+	{
+		if (first == last)
+			return true;
+		for (auto pre = ++first; first != last; ++first, ++pre) {
+			if (comp(*first, *pre))
+				return false;
+		}
+		return true;
+	}
+
+	//检验范围 [first, last) ，并寻找始于 first 且其中元素已以升序排序的最大范围,用 operator< 比较元素。
+	//返回始于 first 且其中元素已以升序排序的最大范围。即满足范围 [first, it) 已排序的最后迭代器 it 
+	template< class ForwardIt >
+	ForwardIt is_sorted_until(ForwardIt first, ForwardIt last)
+	{
+		if (first == last)
+			return last;
+		for (auto pre = first++; first != last; ++first, ++pre) {
+			if (*pre > *first)
+				return first;
+		}
+		return last;
+	}
+
+	//检验范围 [first, last) ，并寻找始于 first 且其中元素已以升序排序的最大范围,用给定的二元比较函数 comp 比较元素
+	template< class ForwardIt, class Compare >
+	ForwardIt is_sorted_until(ForwardIt first, ForwardIt last, Compare comp)
+	{
+		if (first == last)
+			return last;
+		for (auto pre = first++; first != last; ++first, ++pre) {
+			if (comp(*pre,  *first))
+				return first;
+		}
+		return last;
+	}
+
+	//以升序排序范围 [first, last) 中的元素。不保证维持相等元素的顺序
+	template< class RandomIt >
+	void sort(RandomIt first, RandomIt last)
+	{
+
+	}
+
+
+	template< class RandomIt, class Compare >
+	void sort(RandomIt first, RandomIt last, Compare comp)
+	{
+
+	}
+
+	//重排元素，使得范围 [first, middle) 含有范围 [first, last) 中已排序的 middle - first 个最小元素。
+	//不保证保持相等的元素顺序。范围[middle, last) 中剩余的元素顺序未指定,用 operator< 比较元素
+	template< class RandomIt >
+	void partial_sort(RandomIt first, RandomIt middle, RandomIt last)
+	{
+		if (first == last)
+			return;
+		auto n = middle - first;
+		while (n-- != 0) {
+			mystl::make_heap(first++, last, std::greater<typename iterator_traits<RandomIt>::value_type>{});
+		}
+	}
+
+
+	template< class RandomIt, class Compare >
+	void partial_sort(RandomIt first, RandomIt middle, RandomIt last, Compare comp)
+	{
+		if (first == last)
+			return;
+		auto n = middle - first;
+		while (n-- != 0) {
+			make_heap(first++, last, comp);
+		}
+	}
+
+	//以升序排序范围 [first, last) 中的元素。保证保持等价元素的顺序,用 operator< 比较元素
+	template< class RandomIt >
+	void stable_sort(RandomIt first, RandomIt last)
+	{
+
+	}
+
+	//以升序排序范围 [first, last) 中的元素。保证保持等价元素的顺序,用给定的比较函数 comp 比较元素
+	template< class RandomIt, class Compare >
+	void stable_sort(RandomIt first, RandomIt last, Compare comp)
+	{
+
+	}
+	//返回指向范围 [first, last) 中首个不小于（即大于或等于） value 的元素的迭代器，或若找不到这种元素则返回 last 
+	template< class ForwardIt, class T >
+	ForwardIt lower_bound(ForwardIt first, ForwardIt last, const T& value)
+	{
+		
+	}
+
+	template< class ForwardIt, class T, class Compare >
+	ForwardIt lower_bound(ForwardIt first, ForwardIt last, const T& value, Compare comp)
+	{
+
+	}
+
+	//返回指向范围 [first, last) 中首个大于 value 的元素的迭代器，或若找不到这种元素则返回 last 。采用二分实现，所以调用前必须保证有序
+	template< class ForwardIt, class T >
+	ForwardIt upper_bound(ForwardIt first, ForwardIt last, const T& value)
+	{
+
+	}
+
+	template< class ForwardIt, class T, class Compare >
+	ForwardIt upper_bound(ForwardIt first, ForwardIt last, const T& value, Compare comp)
+	{
+
+	}
+
+	//检查等价于 value 的元素是否出现于范围 [first, last) 中
+	template< class ForwardIt, class T >
+	bool binary_search(ForwardIt first, ForwardIt last, const T& value)
+	{
+
+	}
+
+	template< class ForwardIt, class T, class Compare >
+	bool binary_search(ForwardIt first, ForwardIt last, const T& value, Compare comp)
+	{
+
+	}
+
+	//返回范围 [first, last) 中含有所有等价于 value 的元素的范围
+	template< class ForwardIt, class T >
+	mystl::pair<ForwardIt, ForwardIt>
+		equal_range(ForwardIt first, ForwardIt last, const T& value)
+	{
+
+	}
+
+	template< class ForwardIt, class T, class Compare >
+	mystl::pair<ForwardIt, ForwardIt>
+		equal_range(ForwardIt first, ForwardIt last, const T& value, Compare comp)
+	{
+
+	}
+
+	//归并二个已排序范围 [first1, last1) 和 [first2, last2) 到始于 d_first 的一个已排序范围中
+	template< class InputIt1, class InputIt2, class OutputIt >
+	OutputIt merge(InputIt1 first1, InputIt1 last1,
+		InputIt2 first2, InputIt2 last2, OutputIt d_first)
+	{
+
+	}
+
+	template< class InputIt1, class InputIt2, class OutputIt, class Compare>
+	OutputIt merge(InputIt1 first1, InputIt1 last1,
+		InputIt2 first2, InputIt2 last2, OutputIt d_first, Compare comp)
+	{
+
+	}
 }
 
 #endif

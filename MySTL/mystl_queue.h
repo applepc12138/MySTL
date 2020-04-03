@@ -52,11 +52,13 @@ namespace mystl {
 
 /*************************************************************************************************/
 
+	//first为指向堆数组第一个元素迭代器, holeIndex为堆数组最后一个元素之后的索引(要添加元素索引)
+	//topIndex为可以上溯至最顶端的元素索引,value为需要添加的元素
 	template <class RandomAccessIterator, class Distance, class T, class Compare>
-	void __push_heap(RandomAccessIterator first, Distance holeIndex,
+	void _push_heap(RandomAccessIterator first, Distance holeIndex,
 		Distance topIndex, T value, Compare comp) {
 		Distance parent = (holeIndex - 1) / 2;
-		while (holeIndex > topIndex && comp(*(first + parent), value)) {
+		while (holeIndex > topIndex && comp(*(first + parent), value)) {//上溯
 			*(first + holeIndex) = *(first + parent);
 			holeIndex = parent;
 			parent = (holeIndex - 1) / 2;
@@ -64,20 +66,22 @@ namespace mystl {
 		*(first + holeIndex) = value;
 	}
 
+	//插入位于位置 last-1 的元素到范围 [first, last-1) 所定义的最大堆中
 	template <class RandomAccessIterator, class Compare>
 	inline void push_heap(RandomAccessIterator first, RandomAccessIterator last,
 		Compare comp = std::less<typename iterator_traits<RandomAccessIterator>::value_type>()) {
 		typedef typename iterator_traits<RandomAccessIterator>::difference_type  Distance;
 		typedef typename iterator_traits<RandomAccessIterator>::value_type Value_type;
-		__push_heap(first, Distance((last - first) - 1), Distance(0), Value_type(*(last - 1)), comp);
+		_push_heap(first, Distance((last - first) - 1), Distance(0), Value_type(*(last - 1)), comp);
 	}
 
+	//
 	template <class RandomAccessIterator, class Distance, class T, class Compare>
-	void __adjust_heap(RandomAccessIterator first, Distance holeIndex,
-		Distance len, T value, Compare comp) {
+	void _adjust_heap(RandomAccessIterator first, Distance holeIndex,
+		Distance len, T value, Compare comp) {//holeIndex为需要下调的元素索引,len为堆数组长度
 		Distance topIndex = holeIndex;
-		Distance secondChild = 2 * holeIndex + 2;
-		while (secondChild < len) {
+		Distance secondChild = 2 * holeIndex + 2;//需下调节点的右子节点索引
+		while (secondChild < len) {//下调
 			if (comp(*(first + secondChild), *(first + (secondChild - 1))))
 				secondChild--;
 			*(first + holeIndex) = *(first + secondChild);
@@ -88,23 +92,25 @@ namespace mystl {
 			*(first + holeIndex) = *(first + (secondChild - 1));
 			holeIndex = secondChild - 1;
 		}
-		__push_heap(first, holeIndex, topIndex, value, comp);
+		_push_heap(first, holeIndex, topIndex, value, comp);
 	}
 
 	template <class RandomAccessIterator, class T, class Compare, class Distance>
-	inline void __pop_heap(RandomAccessIterator first, RandomAccessIterator last,
+	inline void _pop_heap(RandomAccessIterator first, RandomAccessIterator last,
 		RandomAccessIterator result, T value, Compare comp,
 		Distance*) {
-		*result = *first;
-		__adjust_heap(first, Distance(0), Distance(last - first), value, comp);
+		*result = *first;//放置到堆数组尾
+		_adjust_heap(first, Distance(0), Distance(last - first), value, comp);
 	}
 
+	//交换在位置 first 和在位置 last-1 的值，并令子范围 [first, last-1) 重新变为堆
+	//这拥有从范围 [first, last) 所定义的堆移除首个元素的效果
 	template <class RandomAccessIterator, class Compare>
 	inline void pop_heap(RandomAccessIterator first, RandomAccessIterator last,
 		Compare comp = std::less<typename iterator_traits<RandomAccessIterator>::value_type>()) {
 		typedef typename iterator_traits<RandomAccessIterator>::difference_type  Distance;
 		typedef typename iterator_traits<RandomAccessIterator>::value_type Value_type;
-		__pop_heap(first, last - 1, last - 1, Value_type(*(last - 1)), comp, (Distance*)(0));
+		_pop_heap(first, last - 1, last - 1, Value_type(*(last - 1)), comp, (Distance*)(0));
 	}
 
 	template <class RandomAccessIterator, class Compare>
@@ -118,7 +124,7 @@ namespace mystl {
 		Distance parent = (len - 2) / 2;
 
 		while (true) {
-			__adjust_heap(first, parent, len, Value_type(*(first + parent)), comp);
+			_adjust_heap(first, parent, len, Value_type(*(first + parent)), comp);
 			if (parent == 0) return;
 			parent--;
 		}

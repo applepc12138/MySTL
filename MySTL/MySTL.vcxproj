@@ -85,7 +85,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <WarningLevel>Level2</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -162,6 +162,7 @@
     <ClInclude Include="jjalloc.h" />
     <ClInclude Include="mystl_alloc.h" />
     <ClInclude Include="mystl_construct.h" />
+    <ClInclude Include="mystl_functional.h" />
     <ClInclude Include="mystl_hashmap.h" />
     <ClInclude Include="mystl_hashset.h" />
     <ClInclude Include="mystl_hashtable.h" />
