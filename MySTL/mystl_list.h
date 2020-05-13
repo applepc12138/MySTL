@@ -5,6 +5,8 @@
 #include "mystl_allocator.h"
 #include "mystl_iterator.h"
 
+#include <initializer_list>
+
 namespace mystl {
 
 	template <typename T>
@@ -70,6 +72,7 @@ namespace mystl {
 	bool operator== (const  list<T, Alloc>&x, const list<T, Alloc>&y);
 	template<typename T,typename Alloc>
 	bool operator< (const  list<T, Alloc>&x, const list<T, Alloc>&y);
+
 	template <typename T, typename Alloc = simple_alloc<list_node<T>, alloc>>
 	class list {
 		friend bool operator==<T, Alloc> (const list<T, Alloc>& x, const list<T, Alloc>& y);
@@ -98,16 +101,19 @@ namespace mystl {
 		explicit list(size_type n, const value_type& x = value_type());
 		template <typename InputIterator>
 		list(InputIterator first, InputIterator last);
+		list(std::initializer_list<T> slist);
 		~list();
 
 		reference operator=(const list& x);
 
 	public:
 		iterator begin() { return node->next; }
-		const_iterator begin()const { return (list_node<const T>*)node->next; }//const_iterator中的成员变量类型是list_node<const T>*类型
+		const_iterator begin() const { return (list_node<const T>*)node->next; }//const_iterator中的成员变量类型是list_node<const T>*类型
 		iterator end() { return node; }
-		const_iterator end()const { return (list_node<const T>*)node; }//const_iterator中的成员变量类型是list_node<const T>*类型
-		
+		const_iterator end() const { return (list_node<const T>*)node; }//const_iterator中的成员变量类型是list_node<const T>*类型
+		const_iterator cbegin() const {	return (list_node<const T>*)node->next; }
+		const_iterator cend() const { return (list_node<const T>*)node; }
+
 		reference front(){ return node->next->data; }
 		const_reference front()const { return node->next->data; }
 		reference back(){ return node->pre->data; }
@@ -164,15 +170,15 @@ namespace mystl {
 			node->next = node;
 			node->pre = node;
 		}
+
 	public:
-		size_type size()const
-		{
+		size_type size() const {
 			size_type n = 0;
 			distance(begin(), end(), n);
 			return n;
 		}
-		bool empty()const 
-		{
+
+		bool empty() const {
 			return node->next == node;
 		}
 		void clear();
@@ -218,6 +224,13 @@ namespace mystl {
 		empty_initialize();
 		insert(end(), first, last);
 	}
+
+	template <typename T, typename Alloc /*= simple_alloc<list_node<T>, alloc>*/>
+	mystl::list<T, Alloc>::list(std::initializer_list<T> slist)
+	{
+
+	}
+
 	template<typename T, typename Alloc>
 	inline list<T, Alloc>::~list()
 	{
@@ -225,16 +238,19 @@ namespace mystl {
 		put_node(node);
 		std::cout << "析构函数执行" << endl;
 	}
+
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::push_front(const value_type & v)
 	{
 		insert(begin(), v);
 	}
+
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::push_back(const value_type & v)
 	{
 		insert(end(), v);
 	}
+
 	template<typename T, typename Alloc>
 	inline typename list<T, Alloc>::iterator list<T, Alloc>::insert(iterator position, const value_type & v)
 	{
@@ -245,12 +261,14 @@ namespace mystl {
 		position.nodeptr->pre = tmp;
 		return tmp;//隐式类型转换
 	}
+
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::insert(iterator position, size_type n, const value_type & v)
 	{
 		while(n--) 
 			insert(position, v);
 	}
+
 	template<typename T, typename Alloc>
 	template<typename InputIterator>
 	inline void list<T, Alloc>::insert(iterator position, InputIterator first, InputIterator last)
@@ -260,6 +278,7 @@ namespace mystl {
 			++first;
 		}
 	}
+
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::remove(const value_type & v)
 	{
@@ -271,6 +290,7 @@ namespace mystl {
 				++first;
 		}
 	}
+
 	template<typename T, typename Alloc>
 	inline typename list<T, Alloc>::iterator list<T, Alloc>::erase(iterator position)
 	{
@@ -280,6 +300,7 @@ namespace mystl {
 		destory_node(position.nodeptr);
 		return iterator(next);//返回删除后下一个迭代器
 	}
+
 	template<typename T, typename Alloc>
 	inline typename list<T, Alloc>::iterator list<T, Alloc>::erase(iterator first, iterator last)
 	{
@@ -287,6 +308,7 @@ namespace mystl {
 			first = erase(first);
 		return first;
 	}
+
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::merge(list & l)//合并两个递增链表
 	{
@@ -311,17 +333,20 @@ namespace mystl {
 			transfer(end(), iterator(p), end());
 		l.node->next = l.node->pre = l.node;
 	}
+
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::splice(iterator position, list & l)
 	{
 		if(!l.empty())
 			transfer(position, l.begin(), l.end());
 	}
+
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::splice(iterator posititon, iterator first, iterator last)
 	{
 		transfer(posititon, first, last);
 	}
+
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::reverse()
 	{
@@ -335,16 +360,19 @@ namespace mystl {
 			transfer(begin(), tmp, cur);
 		}
 	}
+
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::sort()
 	{
 
 	}
+
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::unique()
 	{
 
 	}
+
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::transfer(iterator position, iterator first, iterator last)
 	{
@@ -359,6 +387,7 @@ namespace mystl {
 			first.nodeptr->pre->next = first.nodeptr;
 		}
 	}
+
 	template<typename T, typename Alloc>
 	inline void list<T, Alloc>::clear()
 	{

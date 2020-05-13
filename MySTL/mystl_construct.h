@@ -9,11 +9,18 @@
 #include "mytype_traits.h"
 #include "mystl_iterator.h"
 
+#include <utility>
 
 namespace mystl {
 	template <typename T1, typename T2>
 	inline void construct(T1* p, const T2& value) {//p显然不能是const类型
 		new(p) T1(value);
+	}
+
+	template<typename T1, typename... Args>
+	inline void construct(T1* p, Args&&... args)
+	{
+		new(p) T1(std::forward<Args>(args)...);
 	}
 
 	//版本一

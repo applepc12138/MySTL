@@ -76,7 +76,7 @@ namespace mystl {
 	}
 
 	//返回来自二个范围：一个以 [first1, last1) 定义而另一个以 [first2,last2) 定义
-	//的首个不匹配对。若不提供 last2,则它指代 first2 + (last1 - first1) 。
+	//的首个不匹配对。若不提供 last2,则它指代 first2 + (last1 - first1)
 	template< class InputIt1, class InputIt2 >
 	mystl::pair<InputIt1, InputIt2>
 		mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2)
@@ -155,8 +155,8 @@ namespace mystl {
 	}
 
 	template <typename BidirectionalIt1, typename BidirectionalIt2>
-	BidirectionalIt1 find_end_dispatch(BidirectionalIt1 first1, BidirectionalIt1 last1, BidirectionalIt2 first2, BidirectionalIt2 last2,
-		bidirectional_iterator_tag, bidirectional_iterator_tag)
+	BidirectionalIt1 find_end_dispatch(BidirectionalIt1 first1, BidirectionalIt1 last1, BidirectionalIt2 first2,
+		BidirectionalIt2 last2, bidirectional_iterator_tag, bidirectional_iterator_tag)
 	{
 		typedef reverse_iterator<BidirectionalIt1> reit1;
 		typedef reverse_iterator<BidirectionalIt2> reit2;	
@@ -174,7 +174,7 @@ namespace mystl {
 	template< class ForwardIt1, class ForwardIt2 >
 	ForwardIt1 find_end(ForwardIt1 first1, ForwardIt1 last1, ForwardIt2 first2, ForwardIt2 last2)
 	{
-		find_end_dispatch(first1, last1, first2, last2, iterator_category(first1), iterator_category(first2));
+		return find_end_dispatch(first1, last1, first2, last2, iterator_category(first1), iterator_category(first2));
 	}
 
 
@@ -314,7 +314,7 @@ namespace mystl {
 			auto cur1 = first;
 			auto cur2 = s_first;
 			for (; cur1 != last && cur2 != s_last; ++cur1, ++cur2) {
-				if (P(*cur1, *cur2))
+				if (p(*cur1, *cur2))
 					break;
 			}
 			if (cur2 == s_last)
@@ -510,43 +510,203 @@ namespace mystl {
 	{
 
 	}
+
+	template<class ForwardIt, class T>
+	ForwardIt _lower_bound(ForwardIt first, ForwardIt last, const T& value, forward_iterator_tag)
+	{
+		auto len = mystl::distance(first, last);
+		auto half = len;
+		ForwardIt middle;
+		while (len > 0)//使用[first, first + len)代表左闭右开区间
+		{
+			half = len >> 1;
+			middle = first;
+			mystl::advance(middle, half);
+			if (*middle < value)
+			{
+				first = middle;
+				++first;
+				len = len - half - 1;
+			}
+			else
+			{
+				len = half;
+			}
+		}
+		return first;
+	}
+
+	template<class RandomIt, class T>
+	RandomIt _lower_bound(RandomIt first, RandomIt last, const T& value, random_access_iterator_tag)
+	{
+		while (first < last) {
+			auto middle = (last - first) / 2;
+			if (*middle < value) {
+				first = middle + 1;
+			}
+			else {
+				last = middle;
+			}
+		}
+		return first;
+	}
+
 	//返回指向范围 [first, last) 中首个不小于（即大于或等于） value 的元素的迭代器，或若找不到这种元素则返回 last 
 	template< class ForwardIt, class T >
 	ForwardIt lower_bound(ForwardIt first, ForwardIt last, const T& value)
 	{
-		
+		return _lower_bound(first, last, value, iterator_category(first));
 	}
+
+	template<class ForwardIt, class T, class Compare>
+	ForwardIt _lower_bound(ForwardIt first, ForwardIt last, const T& value, Compare comp, forward_iterator_tag)
+	{
+		auto len = mystl::distance(first, last);
+		auto half = len;
+		ForwardIt middle;
+		while (len > 0)//使用[first, first + len)代表左闭右开区间
+		{
+			half = len >> 1;
+			middle = first;
+			mystl::advance(middle, half);
+			if (comp(*middle, value))
+			{
+				first = middle;
+				++first;
+				len = len - half - 1;
+			}
+			else
+			{
+				len = half;
+			}
+		}
+		return first;
+	}
+
+	template<class RandomIt, class T, class Compare>
+	RandomIt _lower_bound(RandomIt first, RandomIt last, const T& value,Compare comp, random_access_iterator_tag)
+	{
+		while (first < last) {
+			auto middle = (last - first) / 2;
+			if(comp(*middle, value)) {
+				first = middle + 1;
+			}
+			else {
+				last = middle;
+			}
+		}
+		return first;
+	}
+
 
 	template< class ForwardIt, class T, class Compare >
 	ForwardIt lower_bound(ForwardIt first, ForwardIt last, const T& value, Compare comp)
 	{
+		return _lower_bound(first, last, value, comp, iterator_category(first));
+	}
 
+	template<class ForwardIt, class T>
+	ForwardIt _upper_bound(ForwardIt first, ForwardIt last, const T& value, forward_iterator_tag)
+	{
+		auto len = mystl::distance(first, last);
+		auto half = len;
+		ForwardIt middle;
+		while (len > 0)//使用[first, first + len)代表左闭右开区间
+		{
+			half = len >> 1;
+			middle = first;
+			mystl::advance(middle, half);
+			if (value < *middle) {
+				len = half;
+			}
+			else {
+				first = middle;
+				++first;
+				len = len - half - 1;
+			}
+		}
+		return first;
+	}
+
+	template<class RandomIt, class T>
+	RandomIt _upper_bound(RandomIt first, RandomIt last, const T& value, random_access_iterator_tag)
+	{
+		while (first < last) {
+			auto middle = (last - first) / 2;
+			if (value < *middle) {
+				last = middle;
+			}
+			else {
+				first = middle + 1;
+			}
+		}
+		return first;
 	}
 
 	//返回指向范围 [first, last) 中首个大于 value 的元素的迭代器，或若找不到这种元素则返回 last 。采用二分实现，所以调用前必须保证有序
 	template< class ForwardIt, class T >
 	ForwardIt upper_bound(ForwardIt first, ForwardIt last, const T& value)
 	{
+		return _upper_bound(first, last, value, iterator_category(first));
+	}
 
+	template<class ForwardIt, class T, class Compare>
+	ForwardIt _upper_bound(ForwardIt first, ForwardIt last, const T& value, Compare comp, forward_iterator_tag)
+	{
+		auto len = mystl::distance(first, last);
+		auto half = len;
+		ForwardIt middle;
+		while (len > 0)//使用[first, first + len)代表左闭右开区间
+		{
+			half = len >> 1;
+			middle = first;
+			mystl::advance(middle, half);
+			if (comp(value, *middle)) {
+				len = half;
+			}
+			else {
+				first = middle;
+				++first;
+				len = len - half - 1;
+			}
+		}
+		return first;
+	}
+
+	template<class RandomIt, class T, class Compare>
+	RandomIt _upper_bound(RandomIt first, RandomIt last, const T& value, Compare comp, random_access_iterator_tag)
+	{
+		while (first < last) {
+			auto middle = (last - first) / 2;
+			if (comp(value, *middle)) {
+				last = middle;
+			}
+			else {
+				first = middle + 1;
+			}
+		}
+		return first;
 	}
 
 	template< class ForwardIt, class T, class Compare >
 	ForwardIt upper_bound(ForwardIt first, ForwardIt last, const T& value, Compare comp)
 	{
-
+		return _upper_bound(first, last, value, comp, iterator_category(first));
 	}
 
 	//检查等价于 value 的元素是否出现于范围 [first, last) 中
 	template< class ForwardIt, class T >
 	bool binary_search(ForwardIt first, ForwardIt last, const T& value)
 	{
-
+		auto i = mystl::lower_bound(first, last, value);
+		return i != last && !(value < *i);
 	}
 
 	template< class ForwardIt, class T, class Compare >
 	bool binary_search(ForwardIt first, ForwardIt last, const T& value, Compare comp)
 	{
-
+		auto i = mystl::lower_bound(first, last, value);
+		return i != last && !comp(value, *i);
 	}
 
 	//返回范围 [first, last) 中含有所有等价于 value 的元素的范围
@@ -554,14 +714,16 @@ namespace mystl {
 	mystl::pair<ForwardIt, ForwardIt>
 		equal_range(ForwardIt first, ForwardIt last, const T& value)
 	{
-
+		return mystl::make_pair(mystl::lower_bound(first, last, value),
+			mystl::upper_bound(first, last, value));
 	}
 
 	template< class ForwardIt, class T, class Compare >
 	mystl::pair<ForwardIt, ForwardIt>
 		equal_range(ForwardIt first, ForwardIt last, const T& value, Compare comp)
 	{
-
+		return mystl::make_pair(mystl::lower_bound(first, last, value, comp),
+			mystl::upper_bound(first, last, value, comp));
 	}
 
 	//归并二个已排序范围 [first1, last1) 和 [first2, last2) 到始于 d_first 的一个已排序范围中
@@ -569,14 +731,40 @@ namespace mystl {
 	OutputIt merge(InputIt1 first1, InputIt1 last1,
 		InputIt2 first2, InputIt2 last2, OutputIt d_first)
 	{
-
+		for (; first1 != last1; ++d_first) {
+			if (first2 == last2) {
+				return mystl::copy(first1, last1, d_first);
+			}
+			if (*first2 < *first1) {
+				*d_first = *first2;
+				++first2;
+			}
+			else {
+				*d_first = *first1;
+				++first1;
+			}
+		}
+		return mystl::copy(first2, last2, d_first);
 	}
 
 	template< class InputIt1, class InputIt2, class OutputIt, class Compare>
 	OutputIt merge(InputIt1 first1, InputIt1 last1,
 		InputIt2 first2, InputIt2 last2, OutputIt d_first, Compare comp)
 	{
-
+		for (; first1 != last1; ++d_first) {
+			if (first2 == last2) {
+				return mystl::copy(first1, last1, d_first);
+			}
+			if (comp(*first2, *first1)) {
+				*d_first = *first2;
+				++first2;
+			}
+			else {
+				*d_first = *first1;
+				++first1;
+			}
+		}
+		return mystl::copy(first2, last2, d_first);
 	}
 }
 

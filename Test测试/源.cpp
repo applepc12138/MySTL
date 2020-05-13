@@ -91,5 +91,8 @@ int main()
 	cout << "irref=  " << ilref << endl;
 	cout << "irref=  " << irref << endl;
 
+
+	func4("hello");
+
 	return 0;
 }

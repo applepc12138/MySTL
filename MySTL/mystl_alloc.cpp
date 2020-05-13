@@ -52,7 +52,7 @@ namespace mystl {
 			if (!start_free) {//…Í«Î∂—ø’º‰ ß∞‹
 				obj *my_free_list = nullptr;
 				obj *p = nullptr;
-				for (int i = bytes; i <= MAXBYTES; i += ALIGN) {
+				for (size_t i = bytes; i <= MAXBYTES; i += ALIGN) {
 					my_free_list = freelist[freelist_index(i)];
 					p = my_free_list;
 					if (p != nullptr) {

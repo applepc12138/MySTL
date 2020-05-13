@@ -7,6 +7,9 @@
 #include "mystl_uninitialized.h"
 #include "mystl_algobase.h"
 
+#include <initializer_list>
+
+
 namespace mystl {
 
 	template <typename T, typename Alloc = simple_alloc<T, alloc>>
@@ -36,7 +39,7 @@ namespace mystl {
 
 	public:
 		//构造,复制,赋值,析构相关函数
-		vector() {}
+		vector():start_(nullptr), end_(nullptr), endofstorage_(nullptr) {}
 		explicit vector(const size_type n) {
 			fill_initialize(n, T());
 		}
@@ -45,6 +48,7 @@ namespace mystl {
 		}
 		template<class InputIterator>
 		vector(InputIterator first, InputIterator last);
+		vector(std::initializer_list<T> slist);
 		vector(const vector& v);
 		vector(vector&& v);
 		vector& operator = (const vector& v);
@@ -57,13 +61,9 @@ namespace mystl {
 		iterator end() { return end_; }
 		const_iterator end() const { return end_; }
 		reverse_iterator rbegin() { return reverse_iterator(end()); }
-		//const_reverse_iterator rbegin() const {
-		//	return const_reverse_iterator(end());
-		//}
 		reverse_iterator rend() { return reverse_iterator(begin()); }
-		//const_reverse_iterator rend() const {
-		//	return const_reverse_iterator(begin());
-		//}
+		const_iterator cbegin() const { return begin(); }
+		const_iterator cend() const { return end(); }
 		reference operator[](size_type n) { return *(begin() + n); }
 		const_reference operator[](size_type n) const { return *(begin() + n); }
 		reference front() { return *(begin()); }
@@ -80,6 +80,11 @@ namespace mystl {
 		void clear();
 		void swap(vector& v);
 		void push_back(const value_type& value);
+		void push_back(value_type&& value) { emplace_back(std::move(value)); }
+		template<typename... Args>
+		iterator emplace(const_iterator  pos, Args&&... args);
+		template<typename... Args>
+		void emplace_back(Args&&... args);
 		void pop_back() { destroy(--end_); }
 		iterator insert(iterator position, const value_type& val);//元素动态增长由此实现
 		void insert(iterator position, const size_type& n, const value_type& val);
@@ -89,6 +94,9 @@ namespace mystl {
 		iterator erase(iterator first, iterator last);
 
 		void reserve(size_type n);
+		void resize(size_type new_size) { resize(new_size, value_type()); }
+		void resize(size_type new_size, const value_type& value);
+		void shink_to_fit();
 
 	private:
 		void insert_aux(iterator pos, const T& value);
@@ -98,14 +106,14 @@ namespace mystl {
 
 	protected:
 		//配置空间并初始化
-		iterator allocate_and_fill(size_type n, const T& value) {
+		iterator allocate_and_init(size_type n, const T& value) {
 			iterator res = data_allocator::allocate(n);
-			uninitialized_fill_n(res, n, value);
+			mystl::uninitialized_fill_n(res, n, value);
 			return res;
 		}
 		//初始化前n个已配置空间	
 		void fill_initialize(size_type n, const T& value) {
-			start_ = allocate_and_fill(n, value);
+			start_ = allocate_and_init(n, value);
 			end_ = start_ + n;
 			endofstorage_ = end_;
 		}
@@ -113,7 +121,7 @@ namespace mystl {
 		template <typename InputIterator>
 		void fill_initialize(InputIterator first, InputIterator last) {
 			start_ = data_allocator::allocate(size_type(last - first));
-			end_ = uninitialized_copy(first, last, start_);
+			end_ = mystl::uninitialized_copy(first, last, start_);
 			endofstorage_ = end_;
 		}
 
@@ -148,10 +156,16 @@ namespace mystl {
 	}
 
 	template<typename T, typename Alloc>
+	inline vector<T, Alloc>::vector(std::initializer_list<T> slist)
+	{
+		fill_initialize(slist.begin(), slist.end());
+	}
+
+	template<typename T, typename Alloc>
 	inline vector<T, Alloc>::~vector()
 	{
 		if (capacity() != 0) {
-			destroy(start_, end_);
+			mystl::destroy(start_, end_);
 			deallocate();
 		}
 	}
@@ -161,19 +175,15 @@ namespace mystl {
 	inline vector<T, Alloc> & vector<T, Alloc>::operator=(const vector & v)
 	{
 		if (&v != this) {
-			destroy(start_, end_);
-			size_type vcap = v.capacity();
-			end_ = start_;
-			if (capacity() >= vcap) {
-				uninitialized_copy(v.begin(), v.end(), start_);
-				end_ = start_ + v.size();
-				endofstorage_ = vcap;
+			mystl::destroy(start_, end_);
+			size_type vsize = v.size();
+			if (capacity() >= vsize) {
+				end_ = mystl::uninitialized_copy(v.begin(), v.end(), start_);
 			}
 			else {
 				deallocate();
 				fill_initialize(v.begin(), v.end());
 			}
-
 		}
 		return *this;
 	}
@@ -189,6 +199,7 @@ namespace mystl {
 		v.start_ = nullptr;
 		v.end_ = nullptr;
 		v.endofstorage_ = nullptr;
+		return *this;
 	}
 
 	template<typename T, typename Alloc>
@@ -198,6 +209,61 @@ namespace mystl {
 			construct(end_++, value);
 		else {
 			insert_aux(end_, value);
+		}
+	}
+
+	template<typename T, typename Alloc>
+	template<typename ...Args>
+	inline typename vector<T, Alloc>::iterator
+	vector<T, Alloc>::emplace(const_iterator pos, Args && ...args)
+	{
+		iterator xpos = const_cast<iterator>(pos);
+		const size_type n = xpos - start_;
+		if (end_ != endofstorage_ && xpos == end_) {
+			emplace_back(std::forward<Args>(args)...);
+		}
+		else if (end_ != endofstorage_) {
+			auto new_end = end_;
+			construct(end_, *(end_ - 1));
+			++new_end;
+			mystl::copy_backward(xpos, end_ - 1, end_);
+			*xpos = value_type(std::forward<Args>(args)...);//移动赋值
+		}
+		else {
+			size_type old_size = size();
+			size_type new_size = old_size == 0 ? 1 : old_size * 2;
+			auto new_start = data_allocator::allocate(new_size);
+			auto new_end = mystl::uninitialized_move(start_, xpos, new_start);
+			construct(new_end++, std::forward<Args>(args)...);
+			new_end = mystl::uninitialized_move(xpos, end_, new_end);
+			mystl::destroy(start_, end_);
+			deallocate();
+			start_ = new_start;
+			end_ = new_end;
+			endofstorage_() = start_ + new_size;
+		}
+		return begin() + n;
+	}
+
+	template<typename T, typename Alloc>
+	template<typename ...Args>
+	inline void vector<T, Alloc>::emplace_back(Args && ...args)
+	{
+		if (end_ < endofstorage_) {
+			mystl::construct(end_++, std::forward<Args>(args)...);
+		}
+		else {
+			size_type old_size = size();
+			size_type new_size = old_size == 0 ? 1 : old_size * 2; 
+			auto new_start = data_allocator::allocate(new_size);
+			//warning(suppress : 4996)
+			auto new_end = mystl::uninitialized_move(start_, end_, new_start);
+			construct(new_end++, std::forward<Args>(args)...);
+			mystl::destroy(start_, end_);
+			deallocate();
+			start_ = new_start;
+			end_ = new_end;
+			endofstorage_ = start_ + new_size;
 		}
 	}
 
@@ -263,20 +329,20 @@ namespace mystl {
 	inline void vector<T, Alloc>::insert_aux(iterator pos, size_type n, const T & value)
 	{
 		if (n != 0) {
-			if (size_type(endofstorage_ - start_) >= n) {
+			if (size_type(endofstorage_ - end_) >= n) {
 				T x_copy = value;
 				const size_type elems_after = end_ - pos;
 				iterator oldend = end_;
 				if (elems_after > n) {
-					uninitialized_copy(end_ - n, end_, end_);
+					mystl::uninitialized_copy(end_ - n, end_, end_);
 					end_ += n;
 					mystl::copy_backward(pos, oldend - n, oldend);
 					mystl::fill(pos, pos + n, x_copy);
 				}
 				else {
-					uninitialized_fill_n(end_, n - elems_after, x_copy);
+					mystl::uninitialized_fill_n(end_, n - elems_after, x_copy);
 					end_ += n - elems_after;
-					uninitialized_copy(pos, oldend, end_);
+					mystl::uninitialized_copy(pos, oldend, end_);
 					end_ += elems_after;
 					mystl::fill(pos, oldend, x_copy);
 				}
@@ -286,11 +352,11 @@ namespace mystl {
 				const size_type len = old_size + (old_size > n ? old_size : n);//?
 				iterator new_start = data_allocator::allocate(len);
 				iterator new_finish = new_start;
-				new_finish = uninitialized_copy(start_, pos, new_start);
-				new_finish = uninitialized_fill_n(new_finish, n, value);
-				new_finish = uninitialized_copy(pos, end_, new_finish);
+				new_finish = mystl::uninitialized_copy(start_, pos, new_start);
+				new_finish = mystl::uninitialized_fill_n(new_finish, n, value);
+				new_finish = mystl::uninitialized_copy(pos, end_, new_finish);
 
-				destroy(start_, end_);
+				mystl::destroy(start_, end_);
 				deallocate();
 				start_ = new_start;
 				end_ = new_finish;
@@ -298,6 +364,8 @@ namespace mystl {
 			}
 		}
 	}
+
+
 
 	template<typename T, typename Alloc>
 	template<class InputIterator>
@@ -323,9 +391,9 @@ namespace mystl {
 					mystl::copy(first, last, position);
 				}
 				else {
-					uninitialized_copy(first + elems_after, last, end_);
+					mystl::uninitialized_copy(first + elems_after, last, end_);
 					end_ += n - elems_after;
-					uninitialized_copy(position, old_finish, end_);
+					mystl::uninitialized_copy(position, old_finish, end_);
 					end_ += elems_after;
 					mystl::copy(first, first + elems_after, position);
 				}
@@ -335,9 +403,9 @@ namespace mystl {
 				const size_type len = old_size + (old_size > n ? old_size : n);
 				iterator new_start = data_allocator::allocate(len);
 				iterator new_finish = new_start;
-				new_finish = uninitialized_copy(start_, position, new_start);
-				new_finish = uninitialized_copy(first, last, new_finish);
-				new_finish = uninitialized_copy(position, end_, new_finish);
+				new_finish = mystl::uninitialized_copy(start_, position, new_start);
+				new_finish = mystl::uninitialized_copy(first, last, new_finish);
+				new_finish = mystl::uninitialized_copy(position, end_, new_finish);
 
 				destroy(start_, end_);
 				deallocate();
@@ -363,12 +431,38 @@ namespace mystl {
 	{
 		if (capacity() < n) {
 			iterator result = data_allocator::allocate(n);
-			iterator newend = uninitialized_copy(start_, end_, result);
-			destroy(start_, end_);
+			iterator newend = mystl::uninitialized_copy(start_, end_, result);
+			mystl::destroy(start_, end_);
 			deallocate();
 			start_ = result;
 			end_ = newend;
 			endofstorage_ = start_ + n;
+		}
+	}
+
+
+	template <typename T, typename Alloc /*= simple_alloc<T, alloc>*/>
+	void mystl::vector<T, Alloc>::resize(size_type new_size, const value_type& value)
+	{
+		if (size() < new_size) {
+			insert(end(), new_size - size(), value);
+		}
+		else {
+			destroy(beign() + new_size, end());
+			end_ = begin() + new_size;
+		}
+	}
+
+	template<typename T, typename Alloc>
+	inline void vector<T, Alloc>::shink_to_fit()
+	{
+		if (end_ < endofstorage_) {
+			auto new_start = data_allocator::allocate(size());
+			auto new_end = uninitialized_move(start_, end_, new_start);
+			destroy(start_, end_);
+			deallocate();
+			start_ = new_start;
+			endofstorage_ = end_ = new_end;
 		}
 	}
 

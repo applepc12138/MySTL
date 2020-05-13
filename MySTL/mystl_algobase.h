@@ -20,13 +20,13 @@ namespace mystl {
 	}
 
 
-	//RandomAccessIterator
-	template <typename RandomAccessIterator, typename OutputIt>
-	inline OutputIt _copy(RandomAccessIterator first, RandomAccessIterator last,
+	//RandomIt
+	template <typename RandomIt, typename OutputIt>
+	inline OutputIt _copy(RandomIt first, RandomIt last,
 			OutputIt result, random_access_iterator_tag)
 	{
-		typedef typename iterator_traits<RandomAccessIterator>::difference_type Distance;
-		for (Distance n = last - first; n > 0; --n, ++first, ++result) 
+		typedef typename iterator_traits<RandomIt>::difference_type Distance;
+		for (Distance n = last - first; n > 0; --n, ++first, ++result)//不需要判断 first != last 
 			*result = *first;
 		return result;
 	}
@@ -51,7 +51,7 @@ namespace mystl {
 
 	template <typename T>
 	inline T* _copy_t(const T* first, const T* last, T* result, _false_type) {
-		return _copy(first, last, result, random_access_iterator_tag());//指针也是一种RandomAccessIterator
+		return _copy(first, last, result, random_access_iterator_tag());//指针也是一种RandomIt
 		//return _copy_d(first, last, result, (ptrdiff_t*)0);
 	}
 
@@ -97,13 +97,13 @@ namespace mystl {
 		return pair<InputIt, OutputIt>(first, result);
 	}
 
-	template <class RandomAccessIterator, class Size, class OutputIt>
-	inline pair<RandomAccessIterator, OutputIt>
-		_copy_n(RandomAccessIterator first, Size count,
+	template <class RandomIt, class Size, class OutputIt>
+	inline pair<RandomIt, OutputIt>
+		_copy_n(RandomIt first, Size count,
 			OutputIt result, random_access_iterator_tag) 
 	{
-		RandomAccessIterator last = first + count;
-		return pair<RandomAccessIterator, OutputIt>(last,
+		RandomIt last = first + count;
+		return pair<RandomIt, OutputIt>(last,
 			mystl::copy(first, last, result));
 	}
 
@@ -117,12 +117,12 @@ namespace mystl {
 	/*********************************copy_backward**********************************/
 
 	//泛化
-	template <typename BidirectionalIterator1, typename BidirectionalIterator2>
+	template <typename BidirIt1, typename BidirIt2>
 	struct _copy_backward_dispatch
 	{
-		BidirectionalIterator2 operator()(BidirectionalIterator1 first,
-			BidirectionalIterator1 last,
-			BidirectionalIterator2 result) {//仅适用于BidirectionalIterator,内部无转调用
+		BidirIt2 operator()(BidirIt1 first,
+			BidirIt1 last,
+			BidirIt2 result) {//仅适用于BidirIt,内部无转调用
 			while (first != last)
 				*--result = *--last;
 			return result;
@@ -165,18 +165,18 @@ namespace mystl {
 	};
 
 	//对外接口
-	template <typename BidirectionalIterator1, typename BidirectionalIterator2>
-	inline BidirectionalIterator2 copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last,
-		BidirectionalIterator2 result) {
-		return _copy_backward_dispatch<BidirectionalIterator1,
-			BidirectionalIterator2>()(first, last,
+	template <typename BidirIt1, typename BidirIt2>
+	inline BidirIt2 copy_backward(BidirIt1 first, BidirIt1 last,
+		BidirIt2 result) {
+		return _copy_backward_dispatch<BidirIt1,
+			BidirIt2>()(first, last,
 				result);
 	}
 
 	/************************************fill***************************************/
 	//待完善
-	template <class ForwardIterator, class T>
-	void fill(ForwardIterator first, ForwardIterator last, const T& value) {
+	template <class ForwardIt, class T>
+	void fill(ForwardIt first, ForwardIt last, const T& value) {
 		for (; first != last; ++first)
 			*first = value;
 	}

@@ -579,7 +579,6 @@ namespace mystl {
 				}
 			}
 			buckets.swap(tmp);
-			
 		}
 	}
 
